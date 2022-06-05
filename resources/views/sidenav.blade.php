@@ -47,12 +47,11 @@ if (\Auth::user()->type == 'Super Admin') {
                                 </li>
                             
 
-                            @can('Manage Role')
+                            <!-- @can('Manage Role') -->
                                 <li class="dash-item dash-hasmenu">
                                     <a class="dash-link" href="{{ route('roles.index') }}">Store Analytics</a>
                                 </li>
-                            @endcan
-
+                            <!-- @endcan -->
                         </ul>
                     </li>
 
@@ -74,11 +73,18 @@ if (\Auth::user()->type == 'Super Admin') {
 
                         <!-- -------------------- shop section ----------------------- -->
 
-                            @can('Manage User')
-                                <li class="dash-item dash-hasmenu">
-                                    <a class="dash-link" href="{{ route('users.index') }}">Products</a>
+                            @can('Manage Vendor')
+                                <li class="dash-item ">
+                                    <a href="{{ route('vendors.index') }}"
+                                        class="dash-link {{ Request::segment(1) == 'customers' ? 'active' : '' }}"><span
+                                            class="dash-mtext">{{ __('Products') }}</span>
+                                    </a>
                                 </li>
                             @endcan
+
+                            <li class="dash-item dash-hasmenu">
+                                <a class="dash-link" href="{{ route('categories.index') }}">Categories</a>
+                            </li>
 
                             @can('Manage Role')
                                 <li class="dash-item dash-hasmenu">

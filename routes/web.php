@@ -47,12 +47,17 @@ Route::resource('customers', 'CustomerController')->middleware(['auth', 'XSS']);
 Route::get('search-vendors/{search?}', 'VendorController@searchVendors')->name('search.vendors')->middleware(['auth', 'XSS']);
 Route::resource('vendors', 'VendorController')->middleware(['auth', 'XSS']);
 
+
 Route::get('get-branches', 'BranchController@getBranches')->name('get.branches')->middleware(['auth', 'XSS']);
 Route::resource('branches', 'BranchController')->middleware(['auth', 'XSS']);
 
 Route::resource('branchsalestargets', 'BranchSalesTargetController')->middleware(['auth', 'XSS']);
 
 Route::resource('taxes', 'TaxController')->middleware(['auth', 'XSS']);
+
+////////////////////
+//Route::get('storeanalytic', 'StoreAnalytic@index')->middleware('auth')->name('storeanalytic')->middleware(['XSS']);
+
 Route::resource('units', 'UnitController')->middleware(['auth', 'XSS']);
 
 Route::get('add-to-cart/{id}/{session}', 'ProductController@addToCart')->middleware(['auth', 'XSS']);
@@ -343,6 +348,7 @@ Route::get('export/Sale', 'SaleController@export')->name('Sale.export');
 Route::get('export/Purchase', 'PurchaseController@export')->name('Purchase.export');
 Route::get('export/Expense', 'ExpenseController@export')->name('Expense.export');
 Route::get('export/Product', 'ProductController@export')->name('Product.export');
+Route::get('import/Product', 'ProductController@import')->name('Product.import');
 
 // recaptcha
 Route::post('/recaptcha-settings',['as' => 'recaptcha.settings.store','uses' =>'SystemController@recaptchaSettingStore'])->middleware(['auth','XSS']);

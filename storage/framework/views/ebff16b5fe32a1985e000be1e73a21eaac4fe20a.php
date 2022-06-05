@@ -47,12 +47,11 @@ if (\Auth::user()->type == 'Super Admin') {
                                 </li>
                             
 
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Role')): ?>
+                            <!-- <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Role')): ?> -->
                                 <li class="dash-item dash-hasmenu">
                                     <a class="dash-link" href="<?php echo e(route('roles.index')); ?>">Store Analytics</a>
                                 </li>
-                            <?php endif; ?>
-
+                            <!-- <?php endif; ?> -->
                         </ul>
                     </li>
 
@@ -74,11 +73,18 @@ if (\Auth::user()->type == 'Super Admin') {
 
                         <!-- -------------------- shop section ----------------------- -->
 
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage User')): ?>
-                                <li class="dash-item dash-hasmenu">
-                                    <a class="dash-link" href="<?php echo e(route('users.index')); ?>">Products</a>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Vendor')): ?>
+                                <li class="dash-item ">
+                                    <a href="<?php echo e(route('vendors.index')); ?>"
+                                        class="dash-link <?php echo e(Request::segment(1) == 'customers' ? 'active' : ''); ?>"><span
+                                            class="dash-mtext"><?php echo e(__('Products')); ?></span>
+                                    </a>
                                 </li>
                             <?php endif; ?>
+
+                            <li class="dash-item dash-hasmenu">
+                                <a class="dash-link" href="<?php echo e(route('categories.index')); ?>">Categories</a>
+                            </li>
 
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Role')): ?>
                                 <li class="dash-item dash-hasmenu">

@@ -1,17 +1,17 @@
 @extends('layouts.app')
 
-@section('page-title', __('Vendors'))
+@section('page-title', __('Products'))
 
 @section('title')
     <div class="d-inline-block">
-        <h5 class="h4 d-inline-block font-weight-400 mb-0">{{ __('Vendors') }}</h5>
+        <h5 class="h4 d-inline-block font-weight-400 mb-0">{{ __('Products') }}</h5>
     </div>
 @endsection
 
 @section('action-btn')
     @can('Create Vendor')
         <a href="#" data-ajax-popup="true" data-size="lg" data-bs-toggle="tooltip" data-title="{{ __('Add New Vendor') }}"
-        title="{{ __(' New Vendor') }}"
+        title="{{ __('Create Product') }}"
             data-url="{{ route('vendors.create') }}" class="btn btn-sm btn-primary btn-icon ">
             <span class=""><i class="ti ti-plus text-white"></i></span>
         </a>
@@ -31,7 +31,7 @@
 
 @section('breadcrumb')
          <li class="breadcrumb-item"><a href="{{ route('home') }}">{{ __('Home') }}</a></li>
-        <li class="breadcrumb-item">{{ __('Vendors') }}</li>
+        <li class="breadcrumb-item">{{ __('Products') }}</li>
 @endsection
 
 @section('content')
@@ -45,10 +45,13 @@
                         <table class="table dataTable" id="pc-dt-simple">
                             <thead>
                                 <tr>
-                                    <th>#</th>
-                                    <th>{{ __('Name') }}</th>
-                                    <th>{{ __('Email') }}</th>
-                                    <th>{{ __('Date/Time Added') }}</th>
+                                    <!-- <th>#</th> -->
+                                    <th>{{ __('Product') }}</th>
+                                    <th>{{ __('Category') }}</th>
+                                    <th>{{ __('Price') }}</th>
+                                    <th>{{ __('Quantity') }}</th>
+                                    <th>{{ __('Stock') }}</th>
+                                    <th>{{ __('Created at') }}</th>
                                     <th class="text-right">{{ __('Action') }}</th>
                                 </tr>
                             </thead>

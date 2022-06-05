@@ -6,8 +6,8 @@
         {{ Form::text('name', null, ['class' => 'form-control', 'placeholder' => __('Enter new vendor name'), 'required'=>'required']) }}
     </div>
     <div class="form-group col-md-6">
-        {{ Form::label('email', __('Email'), ['class' => 'col-form-label']) }}
-        {{ Form::email('email', null, ['class' => 'form-control', 'placeholder' => __('Enter new email address'), 'required'=>'required']) }}
+        {{ Form::label('email', __('Product Categories'), ['class' => 'col-form-label']) }}
+        {{ Form::email('email', null, ['class' => 'form-control', 'required'=>'required']) }}
     </div>
     <div class="form-group col-md-6">
         {{ Form::label('phone_number', __('Phone number'), ['class' => 'col-form-label']) }}
