@@ -100,12 +100,12 @@ if ($cust_darklayout == '') {
                     <li class="nav-item">
                         <a class="btn btn-light ms-2 me-1" href="{{ route('login') }}">{{ __('Login') }}</a>
                     </li>
-                    <!-- @if (Utility::getValByName('disable_signup_button') == 'on') -->
+                    
                     <li class="nav-item">
                         <a class="btn btn-light ms-2 me-1"
                             href="{{ route('register') }}">{{ __('Register') }}</a>
                     </li>
-                    <!-- @endif -->
+                    
                 </ul>
             </div>
         </div>

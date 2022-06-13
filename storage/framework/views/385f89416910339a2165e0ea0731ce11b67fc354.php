@@ -100,12 +100,12 @@ if ($cust_darklayout == '') {
                     <li class="nav-item">
                         <a class="btn btn-light ms-2 me-1" href="<?php echo e(route('login')); ?>"><?php echo e(__('Login')); ?></a>
                     </li>
-                    <!-- <?php if(Utility::getValByName('disable_signup_button') == 'on'): ?> -->
+                    
                     <li class="nav-item">
                         <a class="btn btn-light ms-2 me-1"
                             href="<?php echo e(route('register')); ?>"><?php echo e(__('Register')); ?></a>
                     </li>
-                    <!-- <?php endif; ?> -->
+                    
                 </ul>
             </div>
         </div>
