@@ -24,7 +24,7 @@ if ($cust_darklayout == '') {
 <html lang="en">
 
 <head>
-    <title>{{ __('Posgo SaaS') }}</title>
+    <title>{{ __('Our') }}</title>
 
     <!-- Meta -->
     <meta charset="utf-8" />

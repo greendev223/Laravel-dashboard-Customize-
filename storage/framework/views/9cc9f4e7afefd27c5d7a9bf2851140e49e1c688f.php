@@ -1,5 +1,3 @@
-
-
 <?php $__env->startSection('page-title', __('Products List')); ?>
 
 <?php $__env->startSection('title'); ?>
@@ -8,18 +6,7 @@
     </div>
 <?php $__env->stopSection(); ?>
 
-
 <?php $__env->startSection('action-btn'); ?>
-    
-    <a href="<?php echo e(route('Product.export')); ?>" class="btn btn-sm btn-primary btn-icon " data-bs-toggle="tooltip"
-            title="<?php echo e(__('Export')); ?>">
-            <i class="ti ti-file-export text-white"></i>
-    </a>
-    <a href="<?php echo e(route('Product.export')); ?>" class="btn btn-sm btn-primary btn-icon " data-bs-toggle="tooltip"
-            title="<?php echo e(__('Grid View')); ?>">
-            <i class="ti ti-grid-dots"></i>
-    </a>
-    
     <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Create Product')): ?>
         <a href="#" data-ajax-popup="true" data-size="lg" data-bs-toggle="tooltip" title="<?php echo e(__('Add New Product')); ?>"
             data-title="<?php echo e(__('Add New Product')); ?>" data-url="<?php echo e(route('products.create')); ?>"
@@ -27,7 +14,10 @@
             <span class=""><i class="ti ti-plus text-white"></i></span>
         </a>
     <?php endif; ?>
-    
+    <a href="<?php echo e(route('Product.export')); ?>" class="btn btn-sm btn-primary btn-icon " data-bs-toggle="tooltip"
+        title="<?php echo e(__('Export')); ?>">
+        <i class="ti ti-file-export text-white"></i>
+    </a>
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startSection('breadcrumb'); ?>

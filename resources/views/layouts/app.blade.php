@@ -24,7 +24,7 @@ if (\Auth::user()->type == 'Super Admin') {
         @if (trim($__env->yieldContent('page-title')))
             @yield('page-title') -
         @endif
-        {{ \App\Models\Utility::settings()['company_name'] != ''? \App\Models\Utility::settings()['company_name']: config('app.name', 'POSGo Saas') }}
+        {{ \App\Models\Utility::settings()['company_name'] != ''? \App\Models\Utility::settings()['company_name']: config('app.name', 'Our Store') }}
     </title>
 
     <meta charset="utf-8" />

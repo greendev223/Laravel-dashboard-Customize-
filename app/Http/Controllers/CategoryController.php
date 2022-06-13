@@ -53,6 +53,21 @@ class CategoryController extends Controller
             {
                 return redirect()->back()->with('error', $validator->errors()->first());
             }
+            
+            if(!empty($request->categorie_img))
+            {
+                $filenameWithExt  = $request->file('categorie_img')->getClientOriginalName();
+                $filename         = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+                $extension        = $request->file('categorie_img')->getClientOriginalExtension();
+                $fileNameToStores = $filename . '_' . time() . '.' . $extension;
+                $dir              = storage_path('uploads/product_image/');
+                if(!file_exists($dir))
+                {
+                    mkdir($dir, 0777, true);
+                }
+                $path = $request->file('categorie_img')->storeAs('uploads/product_image/', $fileNameToStores);
+            }
+
 
             $category             = new Category();
             $category->name       = $request->name;

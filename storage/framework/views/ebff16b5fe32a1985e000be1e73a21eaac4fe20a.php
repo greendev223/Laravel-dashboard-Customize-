@@ -75,7 +75,7 @@ if (\Auth::user()->type == 'Super Admin') {
 
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Vendor')): ?>
                                 <li class="dash-item ">
-                                    <a href="<?php echo e(route('vendors.index')); ?>"
+                                    <a href="<?php echo e(route('products.index')); ?>"
                                         class="dash-link <?php echo e(Request::segment(1) == 'customers' ? 'active' : ''); ?>"><span
                                             class="dash-mtext"><?php echo e(__('Products')); ?></span>
                                     </a>
@@ -83,34 +83,32 @@ if (\Auth::user()->type == 'Super Admin') {
                             <?php endif; ?>
 
                             <li class="dash-item dash-hasmenu">
-                                <a class="dash-link" href="<?php echo e(route('categories.index')); ?>">Categories</a>
+                                <a class="dash-link" href="<?php echo e(route('categories.index')); ?>">Product Category</a>
                             </li>
 
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Role')): ?>
-                                <li class="dash-item dash-hasmenu">
-                                    <a class="dash-link" href="<?php echo e(route('roles.index')); ?>">Product Category</a>
-                                </li>
-                            <?php endif; ?>
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage User')): ?>
                                 <li class="dash-item dash-hasmenu">
-                                    <a class="dash-link" href="<?php echo e(route('users.index')); ?>">Product Tax</a>
+                                    <a class="dash-link" href="<?php echo e(route('taxes.index')); ?>">Product Tax</a>
                                 </li>
                             <?php endif; ?>
 
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Role')): ?>
+                            
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage User')): ?>
                                 <li class="dash-item dash-hasmenu">
-                                    <a class="dash-link" href="<?php echo e(route('roles.index')); ?>">Product Coupon</a>
+                                    <a class="dash-link" href="<?php echo e(route('coupons.index')); ?>">Product Coupons
+                                    </a>
                                 </li>
                             <?php endif; ?>
+                            
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage User')): ?>
                                 <li class="dash-item dash-hasmenu">
                                     <a class="dash-link" href="<?php echo e(route('users.index')); ?>">Subscriber</a>
                                 </li>
                             <?php endif; ?>
 
-                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Role')): ?>
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage User')): ?>
                                 <li class="dash-item dash-hasmenu">
-                                    <a class="dash-link" href="<?php echo e(route('roles.index')); ?>">shipping</a>
+                                    <a class="dash-link" href="<?php echo e(route('vendors.index')); ?>">shipping</a>
                                 </li>
                             <?php endif; ?>
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage User')): ?>
@@ -125,7 +123,42 @@ if (\Auth::user()->type == 'Super Admin') {
                                 </li>
                             <?php endif; ?>
 
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Returns')): ?>
+                                <li class="dash-item ">
+                                    <a href="<?php echo e(route('productsreturn.index')); ?>"
+                                        class="dash-link <?php echo e(Request::segment(1) == 'productsreturn' ? 'active' : ''); ?>"><span
+                                            class="dash-mtext"><?php echo e(__('Returns')); ?></span>
+                                    </a>
+                                </li>
+                            <?php endif; ?>
 
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Quotations')): ?>
+                                <li class="dash-item ">
+                                    <a href="<?php echo e(route('quotations.index')); ?>"
+                                        class="dash-link <?php echo e(Request::segment(1) == 'quotations' ? 'active' : ''); ?>"><span
+                                            class="dash-mtext"><?php echo e(__('Quotations')); ?></span>
+                                    </a>
+                                </li>
+                            <?php endif; ?>
+
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Calendar Event')): ?>
+                                <li class="dash-item ">
+                                    <a href="<?php echo e(route('calendars.index')); ?>"
+                                        class="dash-link <?php echo e(Request::segment(1) == 'calendars' ? 'active' : ''); ?>"><span
+                                            class="dash-mtext"><?php echo e(__('Calendars')); ?></span>
+                                    </a>
+                                </li>
+                            <?php endif; ?>
+
+
+                            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Notification')): ?>
+                                <li class="dash-item ">
+                                    <a href="<?php echo e(route('notifications.index')); ?>"
+                                        class="dash-link <?php echo e(Request::segment(1) == 'notifications' ? 'active' : ''); ?>"><span
+                                            class="dash-mtext"><?php echo e(__('Notifications')); ?></span>
+                                    </a>
+                                </li>
+                            <?php endif; ?>
 
                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Permission')): ?>
                                 <li class="dash-item dash-hasmenu">
@@ -133,7 +166,7 @@ if (\Auth::user()->type == 'Super Admin') {
                                 </li>
                             <?php endif; ?>
 
-                        <!---------------------------------- shop section end -------------------- -->
+                        <!---------------------------------- end shop section  -------------------- -->
                         </ul>
                     </li>
                 <?php endif; ?>
@@ -260,25 +293,7 @@ if (\Auth::user()->type == 'Super Admin') {
                 </li>
             <?php endif; ?>
 
-            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Returns')): ?>
-                <li class="dash-item ">
-                    <a href="<?php echo e(route('productsreturn.index')); ?>"
-                        class="dash-link <?php echo e(Request::segment(1) == 'productsreturn' ? 'active' : ''); ?>"><span
-                            class="dash-micon"><i class="ti ti-receipt-refund"></i></span><span
-                            class="dash-mtext"><?php echo e(__('Returns')); ?></span>
-                    </a>
-                </li>
-            <?php endif; ?>
-
-            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Quotations')): ?>
-                <li class="dash-item ">
-                    <a href="<?php echo e(route('quotations.index')); ?>"
-                        class="dash-link <?php echo e(Request::segment(1) == 'quotations' ? 'active' : ''); ?>"><span
-                            class="dash-micon"><i class="ti ti-currency-pound"></i></span><span
-                            class="dash-mtext"><?php echo e(__('Quotations')); ?></span>
-                    </a>
-                </li>
-            <?php endif; ?>
+            
 
             <?php if(Gate::check('Manage Expense') || Gate::check('Manage Expense Category')): ?>
                 <li class="dash-item dash-hasmenu">
@@ -309,26 +324,7 @@ if (\Auth::user()->type == 'Super Admin') {
             <?php endif; ?>
 
 
-            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Calendar Event')): ?>
-                <li class="dash-item ">
-                    <a href="<?php echo e(route('calendars.index')); ?>"
-                        class="dash-link <?php echo e(Request::segment(1) == 'calendars' ? 'active' : ''); ?>"><span
-                            class="dash-micon"><i class="ti ti-calendar"></i></span><span
-                            class="dash-mtext"><?php echo e(__('Calendars')); ?></span>
-                    </a>
-                </li>
-            <?php endif; ?>
-
-
-            <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Notification')): ?>
-                <li class="dash-item ">
-                    <a href="<?php echo e(route('notifications.index')); ?>"
-                        class="dash-link <?php echo e(Request::segment(1) == 'notifications' ? 'active' : ''); ?>"><span
-                            class="dash-micon"><i class="ti ti-notification"></i></span><span
-                            class="dash-mtext"><?php echo e(__('Notifications')); ?></span>
-                    </a>
-                </li>
-            <?php endif; ?>
+            
 
             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Manage Plan')): ?>
                 <li class="dash-item ">

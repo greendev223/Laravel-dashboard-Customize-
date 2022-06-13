@@ -19,7 +19,7 @@
 <?php $__env->stopSection(); ?>
 
 <?php $__env->startSection('breadcrumb'); ?>
-         <li class="breadcrumb-item"><a href="<?php echo e(route('home')); ?>"><?php echo e(__('Home')); ?></a></li>
+        <li class="breadcrumb-item"><a href="<?php echo e(route('home')); ?>"><?php echo e(__('Home')); ?></a></li>
         <li class="breadcrumb-item"><?php echo e(__('Categories')); ?></li>
 <?php $__env->stopSection(); ?>
 
@@ -34,15 +34,19 @@
                             <table class="table dataTable" id="pc-dt-simple">
                                 <thead>
                                 <tr>
-                                    <th>#</th>
-                                    <th><?php echo e(__('Category Name')); ?></th>
-                                    <th class="text-right" width="117px"><?php echo e(__('Action')); ?></th>
+                                    <th scope="col" class="sort"></th>
+                                    <th scope="col" class="sort" data-sort="name"><?php echo e(__('Categorie Name')); ?>
+
+                                    </th>
+                                    <th class="text-right"><?php echo e(__('Action')); ?></th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 <?php $__currentLoopData = $categories; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $category): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                     <tr>
-                                        <td><?php echo e($key + 1); ?></td>
+                                        <td>
+                                           
+                                        </td>
                                         <td><?php echo e($category->name); ?></td>
                                         <td class="text-right">
                                             <?php if (app(\Illuminate\Contracts\Auth\Access\Gate::class)->check('Edit Category')): ?>

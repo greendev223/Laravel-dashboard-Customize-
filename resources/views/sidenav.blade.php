@@ -75,7 +75,7 @@ if (\Auth::user()->type == 'Super Admin') {
 
                             @can('Manage Vendor')
                                 <li class="dash-item ">
-                                    <a href="{{ route('vendors.index') }}"
+                                    <a href="{{ route('products.index') }}"
                                         class="dash-link {{ Request::segment(1) == 'customers' ? 'active' : '' }}"><span
                                             class="dash-mtext">{{ __('Products') }}</span>
                                     </a>
@@ -83,34 +83,32 @@ if (\Auth::user()->type == 'Super Admin') {
                             @endcan
 
                             <li class="dash-item dash-hasmenu">
-                                <a class="dash-link" href="{{ route('categories.index') }}">Categories</a>
+                                <a class="dash-link" href="{{ route('categories.index') }}">Product Category</a>
                             </li>
 
-                            @can('Manage Role')
-                                <li class="dash-item dash-hasmenu">
-                                    <a class="dash-link" href="{{ route('roles.index') }}">Product Category</a>
-                                </li>
-                            @endcan
                             @can('Manage User')
                                 <li class="dash-item dash-hasmenu">
-                                    <a class="dash-link" href="{{ route('users.index') }}">Product Tax</a>
+                                    <a class="dash-link" href="{{ route('taxes.index') }}">Product Tax</a>
                                 </li>
                             @endcan
 
-                            @can('Manage Role')
+                            
+                            @can('Manage User')
                                 <li class="dash-item dash-hasmenu">
-                                    <a class="dash-link" href="{{ route('roles.index') }}">Product Coupon</a>
+                                    <a class="dash-link" href="{{ route('coupons.index') }}">Product Coupons
+                                    </a>
                                 </li>
                             @endcan
+                            
                             @can('Manage User')
                                 <li class="dash-item dash-hasmenu">
                                     <a class="dash-link" href="{{ route('users.index') }}">Subscriber</a>
                                 </li>
                             @endcan
 
-                            @can('Manage Role')
+                            @can('Manage User')
                                 <li class="dash-item dash-hasmenu">
-                                    <a class="dash-link" href="{{ route('roles.index') }}">shipping</a>
+                                    <a class="dash-link" href="{{ route('vendors.index') }}">shipping</a>
                                 </li>
                             @endcan
                             @can('Manage User')
@@ -125,7 +123,42 @@ if (\Auth::user()->type == 'Super Admin') {
                                 </li>
                             @endcan
 
+                            @can('Manage Returns')
+                                <li class="dash-item ">
+                                    <a href="{{ route('productsreturn.index') }}"
+                                        class="dash-link {{ Request::segment(1) == 'productsreturn' ? 'active' : '' }}"><span
+                                            class="dash-mtext">{{ __('Returns') }}</span>
+                                    </a>
+                                </li>
+                            @endcan
 
+                            @can('Manage Quotations')
+                                <li class="dash-item ">
+                                    <a href="{{ route('quotations.index') }}"
+                                        class="dash-link {{ Request::segment(1) == 'quotations' ? 'active' : '' }}"><span
+                                            class="dash-mtext">{{ __('Quotations') }}</span>
+                                    </a>
+                                </li>
+                            @endcan
+
+                            @can('Manage Calendar Event')
+                                <li class="dash-item ">
+                                    <a href="{{ route('calendars.index') }}"
+                                        class="dash-link {{ Request::segment(1) == 'calendars' ? 'active' : '' }}"><span
+                                            class="dash-mtext">{{ __('Calendars') }}</span>
+                                    </a>
+                                </li>
+                            @endcan
+
+
+                            @can('Manage Notification')
+                                <li class="dash-item ">
+                                    <a href="{{ route('notifications.index') }}"
+                                        class="dash-link {{ Request::segment(1) == 'notifications' ? 'active' : '' }}"><span
+                                            class="dash-mtext">{{ __('Notifications') }}</span>
+                                    </a>
+                                </li>
+                            @endcan
 
                             @can('Manage Permission')
                                 <li class="dash-item dash-hasmenu">
@@ -133,7 +166,7 @@ if (\Auth::user()->type == 'Super Admin') {
                                 </li>
                             @endcan
 
-                        <!---------------------------------- shop section end -------------------- -->
+                        <!---------------------------------- end shop section  -------------------- -->
                         </ul>
                     </li>
                 @endif
@@ -260,25 +293,7 @@ if (\Auth::user()->type == 'Super Admin') {
                 </li>
             @endcan
 
-            @can('Manage Returns')
-                <li class="dash-item ">
-                    <a href="{{ route('productsreturn.index') }}"
-                        class="dash-link {{ Request::segment(1) == 'productsreturn' ? 'active' : '' }}"><span
-                            class="dash-micon"><i class="ti ti-receipt-refund"></i></span><span
-                            class="dash-mtext">{{ __('Returns') }}</span>
-                    </a>
-                </li>
-            @endcan
-
-            @can('Manage Quotations')
-                <li class="dash-item ">
-                    <a href="{{ route('quotations.index') }}"
-                        class="dash-link {{ Request::segment(1) == 'quotations' ? 'active' : '' }}"><span
-                            class="dash-micon"><i class="ti ti-currency-pound"></i></span><span
-                            class="dash-mtext">{{ __('Quotations') }}</span>
-                    </a>
-                </li>
-            @endcan
+            
 
             @if (Gate::check('Manage Expense') || Gate::check('Manage Expense Category'))
                 <li class="dash-item dash-hasmenu">
@@ -309,26 +324,7 @@ if (\Auth::user()->type == 'Super Admin') {
             @endif
 
 
-            @can('Manage Calendar Event')
-                <li class="dash-item ">
-                    <a href="{{ route('calendars.index') }}"
-                        class="dash-link {{ Request::segment(1) == 'calendars' ? 'active' : '' }}"><span
-                            class="dash-micon"><i class="ti ti-calendar"></i></span><span
-                            class="dash-mtext">{{ __('Calendars') }}</span>
-                    </a>
-                </li>
-            @endcan
-
-
-            @can('Manage Notification')
-                <li class="dash-item ">
-                    <a href="{{ route('notifications.index') }}"
-                        class="dash-link {{ Request::segment(1) == 'notifications' ? 'active' : '' }}"><span
-                            class="dash-micon"><i class="ti ti-notification"></i></span><span
-                            class="dash-mtext">{{ __('Notifications') }}</span>
-                    </a>
-                </li>
-            @endcan
+            
 
             @can('Manage Plan')
                 <li class="dash-item ">

@@ -24,7 +24,7 @@ if (\Auth::user()->type == 'Super Admin') {
         <?php if(trim($__env->yieldContent('page-title'))): ?>
             <?php echo $__env->yieldContent('page-title'); ?> -
         <?php endif; ?>
-        <?php echo e(\App\Models\Utility::settings()['company_name'] != ''? \App\Models\Utility::settings()['company_name']: config('app.name', 'POSGo Saas')); ?>
+        <?php echo e(\App\Models\Utility::settings()['company_name'] != ''? \App\Models\Utility::settings()['company_name']: config('app.name', 'POSGo')); ?>
 
     </title>
 

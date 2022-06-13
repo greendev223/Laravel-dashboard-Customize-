@@ -109,6 +109,24 @@ Route::get(
     ]
 );
 
+
+//=================================product import/export=============================
+Route::get('shipping/export', 'ShippingController@fileExport')->name('shipping.export');
+Route::get('shipping/import/export', 'ShippingController@fileImportExport')->name('shipping.file.import');
+Route::post('shipping/import', 'ShippingController@fileImport')->name('shipping.import');
+
+Route::resource('shipping', 'ShippingController')->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+
+
+
+
+
+
 Route::get('invoice-filter', 'ReportController@invoiceFilter')->name('invoice.filter')->middleware(['auth', 'XSS']);
 
 
@@ -171,6 +189,8 @@ Route::resource('expenses', 'ExpenseController')->middleware(['auth', 'XSS']);
 Route::resource('expensecategories', 'ExpenseCategoryController')->middleware(['auth', 'XSS']);
 
 Route::resource('calendars', 'CalendarController')->middleware(['auth', 'XSS']);
+Route::resource('shipping', 'ShippingController')->middleware(['auth', 'XSS']);
+
 
 Route::patch('change-notificationstatus/{id}', 'NotificationController@changeNotificationStatus')->name('update.notification.status')->middleware(['auth']);
 Route::resource('notifications', 'NotificationController')->middleware(['auth']);

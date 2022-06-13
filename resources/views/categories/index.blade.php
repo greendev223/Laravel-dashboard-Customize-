@@ -19,7 +19,7 @@
 @endsection
 
 @section('breadcrumb')
-         <li class="breadcrumb-item"><a href="{{ route('home') }}">{{ __('Home') }}</a></li>
+        <li class="breadcrumb-item"><a href="{{ route('home') }}">{{ __('Home') }}</a></li>
         <li class="breadcrumb-item">{{ __('Categories') }}</li>
 @endsection
 
@@ -34,15 +34,18 @@
                             <table class="table dataTable" id="pc-dt-simple">
                                 <thead>
                                 <tr>
-                                    <th>#</th>
-                                    <th>{{ __('Category Name') }}</th>
-                                    <th class="text-right" width="117px">{{ __('Action') }}</th>
+                                    <th scope="col" class="sort"></th>
+                                    <th scope="col" class="sort" data-sort="name">{{ __('Categorie Name') }}
+                                    </th>
+                                    <th class="text-right">{{ __('Action') }}</th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 @foreach ($categories as $key => $category)
                                     <tr>
-                                        <td>{{ $key + 1 }}</td>
+                                        <td>
+                                           
+                                        </td>
                                         <td>{{ $category->name }}</td>
                                         <td class="text-right">
                                             @can('Edit Category')
