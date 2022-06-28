@@ -1,13 +1,16 @@
 <?php
 
 namespace Database\Seeders;
-
-use App\Models\Utility;
+use App\Models\User;
+use App\Models\Store;
+use App\Models\UserStore;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use App\Models\Utility;
+use App\Models\BlogSocial;
 
 class UsersTableSeeder extends Seeder
 {
@@ -18,829 +21,89 @@ class UsersTableSeeder extends Seeder
      */
     public function run()
     {
-        $allPermissions = [
+        $superAdmin              = User::create(
             [
-                'name' => 'Edit Profile',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Change Password',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage User',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create User',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit User',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete User',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Permission',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Permission',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Permission',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Permission',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Role',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Role',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Role',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Role',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'System Settings',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Language',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Language',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Profile',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Profile',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],            
-            [
-                'name' => 'Email Settings',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Logos',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Branch',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Branch',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Branch',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Branch',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Tax',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Tax',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Tax',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Tax',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Unit',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Unit',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Unit',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Unit',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Product',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Product',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Product',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Product',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Category',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Category',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Category',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Category',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Brand',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Brand',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Brand',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Brand',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Cash Register',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Cash Register',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Cash Register',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Cash Register',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Purchases',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Sales',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Customer',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Customer',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Customer',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Customer',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Vendor',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Vendor',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Vendor',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Vendor',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Billing Settings',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Store Settings',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Change Language',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Returns',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Returns',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Returns',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Returns',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Quotations',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Quotations',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Quotations',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Quotations',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Expense Category',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Expense Category',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Expense Category',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Expense Category',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Expense',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Expense',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Expense',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Expense',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Branch Sales Target',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Branch Sales Target',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Branch Sales Target',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Branch Sales Target',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Calendar Event',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Calendar Event',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Calendar Event',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Calendar Event',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Notification',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Notification',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Notification',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Notification',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Coupon',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Coupon',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Coupon',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Delete Coupon',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Plan',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Create Plan',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Edit Plan',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Buy Plan',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'name' => 'Manage Order',
-                'guard_name' => 'web',
-                'created_at' => date('Y-m-d H:i:s'),
-                'updated_at' => date('Y-m-d H:i:s'),
-            ],
-          ];
-
-          Permission::insert($allPermissions);
-
-        $super_admin_permissions = [
-            ['name' => 'Manage User'],
-            ['name' => 'Create User'],
-            ['name' => 'Edit User'],
-            ['name' => 'Delete User'],
-            ['name' => 'Create Role'],
-            ['name' => 'Manage Role'],
-            ['name' => 'Edit Role'],
-            ['name' => 'Delete Role'],
-            ['name' => 'Manage Permission'],
-            ['name' => 'Create Permission'],
-            ['name' => 'Edit Permission'],
-            ['name' => 'Delete Permission'],
-            ['name' => 'Manage Coupon'],
-            ['name' => 'Create Coupon'],
-            ['name' => 'Edit Coupon'],
-            ['name' => 'Delete Coupon'],
-            ['name' => 'Manage Plan'],
-            ['name' => 'Create Plan'],
-            ['name' => 'Edit Plan'],
-            ['name' => 'Manage Profile'],
-            ['name' => 'Edit Profile'],
-            ['name' => 'Delete Profile'],
-            ['name' => 'Email Settings'],
-            ['name' => 'Manage Logos'],
-            ['name' => 'Manage Language'],
-            ['name' => 'Create Language'],
-            ['name' => 'Change Language'],
-            ['name' => 'Change Password'],
-            ['name' => 'Store Settings'],
-            ['name' => 'Manage Order'],
-        ];
-
-        $super_admin_role             = new Role();
-        $super_admin_role->name       = 'Super Admin';
-        $super_admin_role->created_by = 0;
-        $super_admin_role->save();
-
-        $super_admin_role ->givePermissionTo($super_admin_permissions);
-
-        $super_admin = User::create([
-                'name' => 'super admin',
+                'name' => 'Super Admin',
                 'email' => 'superadmin@example.com',
-                'password' => '1234',
-                'parent_id' => 0,
-                'is_active' => 1,
-                'user_status' => 1,
+                'password' => Hash::make('1234'),
+                'type' => 'super admin',
                 'lang' => 'en',
-            ]);
+                'created_by' => 0,
+            ]
+        );
+        $_ENV['CURRENCY_SYMBOL'] = '$';
+        $_ENV['CURRENCY']        = 'USD ';
 
-        $super_admin->assignRole($super_admin_role);
-
-        $owner_permissions = [
-            ['name' => 'Edit Profile'],
-            ['name' => 'Change Password'],
-            ['name' => 'Manage User'],
-            ['name' => 'Create User'],
-            ['name' => 'Edit User'],
-            ['name' => 'Delete User'],
-            ['name' => 'Create Role'],
-            ['name' => 'Manage Role'],
-            ['name' => 'Edit Role'],
-            ['name' => 'Delete Role'],
-            ['name' => 'System Settings'],
-            ['name' => 'Manage Language'],
-            ['name' => 'Manage Profile'],
-            ['name' => 'Delete Profile'],
-            ['name' => 'Manage Branch'],
-            ['name' => 'Create Branch'],
-            ['name' => 'Edit Branch'],
-            ['name' => 'Delete Branch'],
-            ['name' => 'Manage Tax'],
-            ['name' => 'Create Tax'],
-            ['name' => 'Edit Tax'],
-            ['name' => 'Delete Tax'],
-            ['name' => 'Manage Unit'],
-            ['name' => 'Create Unit'],
-            ['name' => 'Edit Unit'],
-            ['name' => 'Delete Unit'],
-            ['name' => 'Manage Product'],
-            ['name' => 'Create Product'],
-            ['name' => 'Edit Product'],
-            ['name' => 'Delete Product'],
-            ['name' => 'Manage Category'],
-            ['name' => 'Create Category'],
-            ['name' => 'Edit Category'],
-            ['name' => 'Delete Category'],
-            ['name' => 'Manage Brand'],
-            ['name' => 'Create Brand'],
-            ['name' => 'Edit Brand'],
-            ['name' => 'Delete Brand'],
-            ['name' => 'Manage Cash Register'],
-            ['name' => 'Create Cash Register'],
-            ['name' => 'Edit Cash Register'],
-            ['name' => 'Delete Cash Register'],
-            ['name' => 'Manage Purchases'],
-            ['name' => 'Manage Sales'],
-            ['name' => 'Manage Customer'],
-            ['name' => 'Create Customer'],
-            ['name' => 'Edit Customer'],
-            ['name' => 'Delete Customer'],
-            ['name' => 'Manage Vendor'],
-            ['name' => 'Create Vendor'],
-            ['name' => 'Edit Vendor'],
-            ['name' => 'Delete Vendor'],
-            ['name' => 'Billing Settings'],
-            ['name' => 'Store Settings'],
-            ['name' => 'Change Language'],
-            ['name' => 'Manage Returns'],
-            ['name' => 'Create Returns'],
-            ['name' => 'Edit Returns'],
-            ['name' => 'Delete Returns'],
-            ['name' => 'Create Quotations'],
-            ['name' => 'Manage Quotations'],
-            ['name' => 'Edit Quotations'],
-            ['name' => 'Delete Quotations'],
-            ['name' => 'Manage Expense Category'],
-            ['name' => 'Create Expense Category'],
-            ['name' => 'Edit Expense Category'],
-            ['name' => 'Delete Expense Category'],
-            ['name' => 'Manage Expense'],
-            ['name' => 'Create Expense'],
-            ['name' => 'Edit Expense'],
-            ['name' => 'Delete Expense'],
-            ['name' => 'Manage Branch Sales Target'],
-            ['name' => 'Create Branch Sales Target'],
-            ['name' => 'Edit Branch Sales Target'],
-            ['name' => 'Delete Branch Sales Target'],
-            ['name' => 'Manage Calendar Event'],
-            ['name' => 'Create Calendar Event'],
-            ['name' => 'Edit Calendar Event'],
-            ['name' => 'Delete Calendar Event'],
-            ['name' => 'Manage Notification'],
-            ['name' => 'Create Notification'],
-            ['name' => 'Edit Notification'],
-            ['name' => 'Delete Notification'],
-            ['name' => 'Manage Plan'],
-            ['name' => 'Buy Plan'],
-            ['name' => 'Manage Order'],   
-          ];
-
-        $owner_role             = new Role();
-        $owner_role->name       = 'Owner';
-        $owner_role->created_by = $super_admin->id;
-        $owner_role->save();
-
-        $owner_role ->givePermissionTo($owner_permissions);
-
-        $owner = User::create([
-                'name' => 'owner',
+        $admin = User::create(
+            [
+                'name' => 'Owner',
                 'email' => 'owner@example.com',
-                'password' => '1234',
-                'parent_id' => $super_admin->id,
-                'plan_id' => 1,
-                'is_active' => 1,
-                'user_status' => 1,
-                'lang' => 'en',
-            ]);
+                'password' => Hash::make('1234'),
+                'type' => 'Owner',
+                'created_by' => $superAdmin->id,
+            ]
+        );
 
-        $owner->assignRole($owner_role);
+        $objStore             = Store::create(
+            [
+                'name' => 'My Store',
+                'email' => 'owner@example.com',
+                'enable_storelink' => 'on',
+                'content' => 'Hi,
+*Welcome to* {store_name},
+Your order is confirmed & your order no. is {order_no}
+Your order detail is:
+Name : {customer_name}
+Address : {billing_address} {billing_city} , {shipping_address} {shipping_city}
+~~~~~~~~~~~~~~~~
+{item_variable}
+~~~~~~~~~~~~~~~~
+Qty Total : {qty_total}
+Sub Total : {sub_total}
+Discount Price : {discount_amount}
+Shipping Price : {shipping_amount}
+Tax : {total_tax}
+Total : {final_total}
+~~~~~~~~~~~~~~~~~~
+To collect the order you need to show the receipt at the counter.
+Thanks {store_name}
+',
+                'item_variable' => '{sku} : {quantity} x {product_name} - {variant_name} + {item_tax} = {item_total}',
+                'store_theme' => 'green-color.css',
+                'theme_dir' => 'theme1',
+                'enable_rating' => 'on',
+                'logo' => 'logo-dark.png',
+                'created_by' => $admin->id,
+            ]
+        );
+        $admin->current_store = $objStore->id;
+        $admin->save();
 
-        $employee_role             = new Role();
-        $employee_role->name       = 'Employee';
-        $employee_role->created_by = $owner->id;
-        $employee_role->save();
+        UserStore::create(
+            [
+                'user_id' => $admin->id,
+                'store_id' => $objStore->id,
+                'permission' => 'Owner',
+            ]
+        );
+       BlogSocial::create(
+            [
+                'enable_social_button' => 'on',
+                'enable_email' => 'on',
+                'enable_twitter' => 'on',
+                'enable_facebook' => 'on',
+                'enable_googleplus' => 'on',
+                'enable_linkedIn' => 'on',
+                'enable_pinterest' => 'on',
+                'enable_stumbleupon' => 'on',
+                'enable_whatsapp' => 'on',
+                'store_id' => $objStore->id,
+                'created_by' => $admin->id,
+            ]
+        );
 
-        $employee_permissions = [
-            ['name' => 'Edit Profile'],
-            ['name' => 'Change Password'],
-            ['name' => 'Manage User'],
-            ['name' => 'Create User'],
-            ['name' => 'Edit User'],
-            ['name' => 'System Settings'],
-            ['name' => 'Manage Language'],
-            ['name' => 'Manage Profile'],
-            ['name' => 'Delete Profile'],
-            ['name' => 'Manage Tax'],
-            ['name' => 'Create Tax'],
-            ['name' => 'Edit Tax'],
-            ['name' => 'Delete Tax'],
-            ['name' => 'Manage Unit'],
-            ['name' => 'Create Unit'],
-            ['name' => 'Edit Unit'],
-            ['name' => 'Delete Unit'],
-            ['name' => 'Manage Product'],
-            ['name' => 'Create Product'],
-            ['name' => 'Edit Product'],
-            ['name' => 'Delete Product'],
-            ['name' => 'Manage Category'],
-            ['name' => 'Create Category'],
-            ['name' => 'Edit Category'],
-            ['name' => 'Delete Category'],
-            ['name' => 'Manage Brand'],
-            ['name' => 'Create Brand'],
-            ['name' => 'Edit Brand'],
-            ['name' => 'Delete Brand'],
-            ['name' => 'Manage Cash Register'],
-            ['name' => 'Create Cash Register'],
-            ['name' => 'Edit Cash Register'],
-            ['name' => 'Delete Cash Register'],
-            ['name' => 'Manage Purchases'],
-            ['name' => 'Manage Sales'],
-            ['name' => 'Manage Customer'],
-            ['name' => 'Create Customer'],
-            ['name' => 'Edit Customer'],
-            ['name' => 'Manage Vendor'],
-            ['name' => 'Create Vendor'],
-            ['name' => 'Edit Vendor'],
-            ['name' => 'Store Settings'],
-            ['name' => 'Change Language'],
-            ['name' => 'Manage Returns'],
-            ['name' => 'Create Returns'],
-            ['name' => 'Edit Returns'],
-            ['name' => 'Delete Returns'],
-            ['name' => 'Create Quotations'],
-            ['name' => 'Manage Quotations'],
-            ['name' => 'Edit Quotations'],
-            ['name' => 'Delete Quotations'],
-            ['name' => 'Manage Branch Sales Target'],
-            ['name' => 'Manage Calendar Event'],
-           ];
+        Utility::defaultEmail();
+        Utility::userDefaultData();
 
-           $employee_role  ->givePermissionTo($employee_permissions);
-
-        // Utility::add_landing_page_data();
     }
 }

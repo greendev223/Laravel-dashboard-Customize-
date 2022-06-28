@@ -10,9 +10,8 @@
 @endsection
 
 @section('container')
-
     <p style="color:red;"><strong>Default Super Admin Created : superadmin@example.com / 1234</strong></p>
-    <p style="color:red;"><strong>Default Owner Created : owner@example.com / 1234</strong></p>
+    <p style="color:red;"><strong>Default Admin Created : owner@example.com / 1234</strong></p>
 
     @if(session('message')['dbOutputLog'])
         <p><strong><small>{{ trans('installer_messages.final.migration') }}</small></strong></p>

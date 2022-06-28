@@ -13,103 +13,228 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-require __DIR__ . '/auth.php';
 
+Route::get('/', function () {
+    return view('welcome');
+});
 
-Route::get('/', 'HomeController@index')->name('home')->middleware(['XSS']);
-Route::get('/change/mode', ['as' => 'change.mode', 'uses' => 'HomeController@changeMode']);
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->middleware(['auth'])->name('dashboard');
 
-Route::resource('roles', 'RoleController')->middleware(['auth', 'XSS']);
+require __DIR__.'/auth.php';
 
-
-
-Route::resource('permissions', 'PermissionController')->middleware(['auth', 'XSS']);
-
-Route::get('checkusertype', 'UserController@checkUserType')->name('user.type')->middleware(['auth', 'XSS']);
-Route::get('profile', 'UserController@displayProfile')->name('profile.display')->middleware(['auth', 'XSS']);
-Route::post('upload', 'UserController@uploadProfile')->name('profile.upload')->middleware(['auth', 'XSS']);
-Route::post('update-password', 'UserController@updatePassword')->name('update.password')->middleware(['auth', 'XSS']);
-Route::delete('deleteprofile', 'UserController@deleteProfile')->name('profile.delete')->middleware(['auth', 'XSS']);
-Route::patch('changeuserstatus/{id}', 'UserController@changeUserStatus')->name('user.status')->middleware(['auth', 'XSS']);
-
-Route::get('user/{id}/plan', 'UserController@upgradePlan')->name('plan.upgrade')->middleware(['auth', 'XSS']);
-Route::get('user/{id}/plan/{pid}', 'UserController@activePlan')->name('plan.active')->middleware(['auth', 'XSS']);
-
-Route::resource('users', 'UserController')->middleware(['auth', 'XSS']);
-
-
-
-
-Route::get('search-customers/{search?}', 'CustomerController@searchCustomers')->name('search.customers')->middleware(['auth', 'XSS']);
-Route::get('get-customer-email/{search?}', 'CustomerController@getCustomerEmail')->name('get.customer.email')->middleware(['auth', 'XSS']);
-Route::resource('customers', 'CustomerController')->middleware(['auth', 'XSS']);
-
-Route::get('search-vendors/{search?}', 'VendorController@searchVendors')->name('search.vendors')->middleware(['auth', 'XSS']);
-Route::resource('vendors', 'VendorController')->middleware(['auth', 'XSS']);
-
-
-Route::get('get-branches', 'BranchController@getBranches')->name('get.branches')->middleware(['auth', 'XSS']);
-Route::resource('branches', 'BranchController')->middleware(['auth', 'XSS']);
-
-Route::resource('branchsalestargets', 'BranchSalesTargetController')->middleware(['auth', 'XSS']);
-
-Route::resource('taxes', 'TaxController')->middleware(['auth', 'XSS']);
-
-////////////////////
-//Route::get('storeanalytic', 'StoreAnalytic@index')->middleware('auth')->name('storeanalytic')->middleware(['XSS']);
-
-Route::resource('units', 'UnitController')->middleware(['auth', 'XSS']);
-
-Route::get('add-to-cart/{id}/{session}', 'ProductController@addToCart')->middleware(['auth', 'XSS']);
-Route::patch('update-cart', 'ProductController@updateCart')->middleware(['auth', 'XSS']);
-Route::delete('remove-from-cart', 'ProductController@removeFromCart')->middleware(['auth', 'XSS']);
-Route::post('empty-cart', 'ProductController@emptyCart')->middleware(['auth', 'XSS']);
-Route::get('name-search-products', 'ProductController@searchProductsByName')->name('name.search.products')->middleware(['auth', 'XSS']);
-Route::get('search-products', 'ProductController@searchProducts')->name('search.products')->middleware(['auth', 'XSS']);
-
-Route::get('product-categories', 'CategoryController@getProductCategories')->name('product.categories')->middleware(['auth', 'XSS']);
-
-Route::resource('products', 'ProductController')->middleware(['auth', 'XSS']);
-Route::resource('categories', 'CategoryController')->middleware(['auth', 'XSS']);
-
-Route::resource('brands', 'BrandController')->middleware(['auth', 'XSS']);
-
-Route::get('purchased-invoice/{id}', 'PurchaseController@purchasedInvoice')->name('purchased.invoice'); //PDF
-Route::get('purchased-invoices/preview/{template}/{color}', 'PurchaseController@previewPurchasedInvoice')->name('purchased.invoice.preview');
-Route::get('purchased-invoices/{id}/get_invoice', 'PurchaseController@printPurchaseInvoice')->name('get.purchased.invoice')->middleware(['XSS']);
-Route::get('purchased-items', 'PurchaseController@purchasedItems')->name('purchased.items')->middleware(['auth', 'XSS']);
-
-Route::resource('purchases', 'PurchaseController')->middleware(['auth', 'XSS']);
-
-Route::get('selled-invoice/{id}', 'SaleController@selledInvoice')->name('selled.invoice'); //PDF
-Route::get('selled-invoices/preview/{template}/{color}', 'SaleController@previewSelledInvoice')->name('selled.invoice.preview');
-Route::get('sales-invoices/{id}/get_invoice', 'SaleController@printSaleInvoice')->name('get.sales.invoice')->middleware(['XSS']);
-Route::get('sales-items', 'SaleController@salesItems')->name('sales.items')->middleware(['auth', 'XSS']);
-
-Route::resource('sales', 'SaleController')->middleware(['auth', 'XSS']);
-
-Route::get('returned-items', 'ProductsReturnController@returnedItems')->name('returned.items')->middleware(['auth', 'XSS']);
-Route::resource('productsreturn', 'ProductsReturnController')->middleware(['auth', 'XSS']);
-
-Route::get('quotation-items', 'QuotationController@quotationItems')->name('quotation.items')->middleware(['auth', 'XSS']);
-Route::get('quotation-invoice/{id}', 'QuotationController@quotationInvoice')->name('quotation.invoice'); //PDF
-Route::get('quotation-invoices/{id}/get_invoice', 'QuotationController@printQuotationInvoice')->name('get.quotation.invoice')->middleware(['XSS']);
-Route::patch('changequotationstatus/{id}', 'QuotationController@changeQuotationStatus')->name('update.quotation.status')->middleware(['auth', 'XSS']);
-Route::patch('resendquotation', 'QuotationController@resendQuotation')->name('resend.quotation')->middleware(['auth', 'XSS']);
-Route::get('quotation-invoices/preview/{template}/{color}', 'QuotationController@previewQuotationInvoice')->name('quotation.invoice.preview');
-Route::resource('quotations', 'QuotationController')->middleware(['auth', 'XSS']);
-
-
+//Route::get('/login/{lang?}', 'Auth\LoginController@showLoginForm')->name('login');
+//
+//Route::get('/password/resets/{lang?}', 'Auth\LoginController@showLinkRequestForm')->name('change.langPass');
 
 Route::get(
-    '/invoice/pay/{invoice}',
+    '/', [
+           'as' => 'dashboard',
+           'uses' => 'DashboardController@index',
+       ]
+)->middleware(
     [
-        'as' => 'pay.invoice',
-        'uses' => 'PurchaseController@payinvoice',
+        'XSS',
+    ]
+);
+Route::get(
+    '/dashboard', [
+                    'as' => 'dashboard',
+                    'uses' => 'DashboardController@index',
+                ]
+)->middleware(
+    [
+        'XSS',
+        'auth',
+    ]
+);
+Route::group(
+    [
+        'middleware' => [
+            'auth',
+        ],
+    ], function (){
+    Route::resource('stores', 'StoreController');
+    Route::post('store-setting/{id}', 'StoreController@savestoresetting')->name('settings.store');
+}
+);
+Route::group(
+    [
+        'middleware' => [
+            'auth',
+            'XSS',
+        ],
+    ], function (){
+    Route::get('change-language/{lang}', 'LanguageController@changeLanquage')->name('change.language')->middleware(
+        [
+            'auth',
+            'XSS',
+        ]
+    );
+    Route::get('manage-language/{lang}', 'LanguageController@manageLanguage')->name('manage.language')->middleware(
+        [
+            'auth',
+            'XSS',
+        ]
+    );
+    Route::post('store-language-data/{lang}', 'LanguageController@storeLanguageData')->name('store.language.data')->middleware(
+        [
+            'auth',
+            'XSS',
+        ]
+    );
+    Route::get('create-language', 'LanguageController@createLanguage')->name('create.language')->middleware(
+        [
+            'auth',
+            'XSS',
+        ]
+    );
+    Route::post('store-language', 'LanguageController@storeLanguage')->name('store.language')->middleware(
+        [
+            'auth',
+            'XSS',
+        ]
+    );
+
+    Route::delete('/lang/{lang}', 'LanguageController@destroyLang')->name('lang.destroy')->middleware(
+        [
+            'auth',
+            'XSS',
+        ]
+    );
+}
+);
+Route::group(
+    [
+        'middleware' => [
+            'auth',
+            'XSS',
+        ],
+    ], function (){
+    Route::get('store-grid/grid', 'StoreController@grid')->name('store.grid');
+    Route::get('store-customDomain/customDomain', 'StoreController@customDomain')->name('store.customDomain');
+    Route::get('store-subDomain/subDomain', 'StoreController@subDomain')->name('store.subDomain');
+    Route::get('store-plan/{id}/plan', 'StoreController@upgradePlan')->name('plan.upgrade');
+    Route::get('store-plan-active/{id}/plan/{pid}', 'StoreController@activePlan')->name('plan.active');
+    Route::DELETE('store-delete/{id}', 'StoreController@storedestroy')->name('user.destroy');
+    Route::DELETE('ownerstore-delete/{id}', 'StoreController@ownerstoredestroy')->name('ownerstore.destroy');
+    Route::get('store-edit/{id}', 'StoreController@storedit')->name('user.edit');;
+    Route::Put('store-update/{id}', 'StoreController@storeupdate')->name('user.update');;
+}
+);
+
+Route::get('/store-change/{id}', 'StoreController@changeCurrantStore')->name('change_store')->middleware(
+    [
+        'auth',
+        'XSS',
     ]
 );
 
+Route::group(
+    [
+        'middleware' => [
+            'auth',
+            'XSS',
+        ],
+    ],
 
+    function (){
+        Route::get('change-language/{lang}', 'LanguageController@changeLanquage')->name('change.language')->middleware(
+            [
+                'auth',
+                'XSS',
+            ]
+        );
+        Route::get('manage-language/{lang}', 'LanguageController@manageLanguage')->name('manage.language')->middleware(
+            [
+                'auth',
+                'XSS',
+            ]
+        );
+        Route::post('store-language-data/{lang}', 'LanguageController@storeLanguageData')->name('store.language.data')->middleware(
+            [
+                'auth',
+                'XSS',
+            ]
+        );
+        Route::get('create-language', 'LanguageController@createLanguage')->name('create.language')->middleware(
+            [
+                'auth',
+                'XSS',
+            ]
+        );
+        Route::post('store-language', 'LanguageController@storeLanguage')->name('store.language')->middleware(
+            [
+                'auth',
+                'XSS',
+            ]
+        );
+
+        Route::delete('/lang/{lang}', 'LanguageController@destroyLang')->name('lang.destroy')->middleware(
+            [
+                'auth',
+                'XSS',
+            ]
+        );
+    }
+);
+Route::get(
+    '/change/mode', [
+                      'as' => 'change.mode',
+                      'uses' => 'DashboardController@changeMode',
+                  ]
+);
+
+Route::get('profile', 'DashboardController@profile')->name('profile')->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+Route::put('change-password', 'DashboardController@updatePassword')->name('update.password');
+Route::put('edit-profile', 'DashboardController@editprofile')->name('update.account')->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+
+Route::get('storeanalytic', 'StoreAnalytic@index')->middleware('auth')->name('storeanalytic')->middleware(['XSS']);
+
+Route::group(
+    [
+        'middleware' => [
+            'auth',
+            'XSS',
+        ],
+    ], function (){
+    Route::post('business-setting', 'SettingController@saveBusinessSettings')->name('business.setting');
+    Route::post('company-setting', 'SettingController@saveCompanySettings')->name('company.setting');
+    Route::post('email-setting', 'SettingController@saveEmailSettings')->name('email.setting');
+    Route::post('system-setting', 'SettingController@saveSystemSettings')->name('system.setting');
+    Route::post('pusher-setting', 'SettingController@savePusherSettings')->name('pusher.setting');
+    Route::get('test-mail', 'SettingController@testMail')->name('test.mail');
+    Route::post('test-mail', 'SettingController@testSendMail')->name('test.send.mail');
+    Route::get('settings', 'SettingController@index')->name('settings');
+    Route::post('payment-setting', 'SettingController@savePaymentSettings')->name('payment.setting');
+    Route::post('owner-payment-setting/{slug?}', 'SettingController@saveOwnerPaymentSettings')->name('owner.payment.setting');
+    Route::post('owner-email-setting/{slug?}', 'SettingController@saveOwneremailSettings')->name('owner.email.setting');
+    Route::post('owner-twilio-setting/{slug?}', 'SettingController@saveOwnertwilioSettings')->name('owner.twilio.setting');
+}
+);
+Route::resource('product_categorie', 'ProductCategorieController')->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+Route::resource('product_tax', 'ProductTaxController')->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
 //=================================product import/export=============================
 Route::get('shipping/export', 'ShippingController@fileExport')->name('shipping.export');
 Route::get('shipping/import/export', 'ShippingController@fileImportExport')->name('shipping.file.import');
@@ -122,210 +247,302 @@ Route::resource('shipping', 'ShippingController')->middleware(
     ]
 );
 
+Route::resource('location', 'LocationController')->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+Route::resource('custom-page', 'PageOptionController')->middleware(['auth']);
+Route::resource('blog', 'BlogController')->middleware(
+    [
+        'auth'
+    ]
+);
+Route::get('blog-social', 'BlogController@socialBlog')->name('blog.social')->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+Route::post('store-social-blog', 'BlogController@storeSocialblog')->name('store.socialblog')->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+
+Route::resource('shipping', 'ShippingController')->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
 
 
+Route::get('/plan/error/{flag}', ['as' => 'error.plan.show','uses' => 'PaymentWallController@planerror']);
+Route::get(
+    '/plans', [
+                'as' => 'plans.index',
+                'uses' => 'PlanController@index',
+            ]
+)->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+Route::get(
+    '/plans/create', [
+                       'as' => 'plans.create',
+                       'uses' => 'PlanController@create',
+                   ]
+)->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+Route::post(
+    '/plans', [
+                'as' => 'plans.store',
+                'uses' => 'PlanController@store',
+            ]
+)->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+Route::get(
+    '/plans/edit/{id}', [
+                          'as' => 'plans.edit',
+                          'uses' => 'PlanController@edit',
+                      ]
+)->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+Route::put(
+    '/plans/{id}', [
+                     'as' => 'plans.update',
+                     'uses' => 'PlanController@update',
+                 ]
+)->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+
+Route::post(
+    '/user-plans/', [
+                      'as' => 'update.user.plan',
+                      'uses' => 'PlanController@userPlan',
+                  ]
+)->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+Route::resource('orders', 'OrderController')->middleware(
+    [
+        'XSS',
+        'auth',
+    ]
+);
+
+Route::get('order/export', 'OrderController@fileExport')->name('order.export');
 
 
-
-Route::get('invoice-filter', 'ReportController@invoiceFilter')->name('invoice.filter')->middleware(['auth', 'XSS']);
-
-
-Route::get('show-purchase-invoice/{id}', 'ReportController@showPurchaseInvoice')->name('show.purchase.invoice')->middleware(['auth', 'XSS']);
-Route::get('purchase-invoice/{id}/edit', 'ReportController@editPurchaseInvoice')->name('edit.purchase.invoice')->middleware(['auth', 'XSS']);
-Route::get('reports/purchases', 'ReportController@reportsPurchases')->name('reports.purchases')->middleware(['auth', 'XSS']);
-
-
-Route::get('show-sell-invoice/{id}', 'ReportController@showSellInvoice')->name('show.sell.invoice')->middleware(['auth', 'XSS']);
-Route::get('sale-invoice/{id}/edit', 'ReportController@editSaleInvoice')->name('edit.sale.invoice')->middleware(['auth', 'XSS']);
-Route::get('reports/sales', 'ReportController@reportsSales')->name('reports.sales')->middleware(['auth', 'XSS']);
-
-
-Route::get('product-stock-analysis', 'ReportController@productStockAnalysisView')->name('product.stock.analysis')->middleware(['auth', 'XSS']);
-Route::get('filter-stock-analysis', 'ReportController@productStockAnalysisFilter')->name('product.stock.analysis.filter')->middleware(['auth', 'XSS']);
-
-
-Route::get('product-category-analysis', 'ReportController@productCategoryAnalysisView')->name('product.category.analysis')->middleware(['auth', 'XSS']);
-Route::get('filter-category-analysis', 'ReportController@productCategoryAnalysisFilter')->name('product.category.analysis.filter')->middleware(['auth', 'XSS']);
-
-
-Route::get('product-brand-analysis', 'ReportController@productBrandAnalysisView')->name('product.brand.analysis')->middleware(['auth', 'XSS']);
-Route::get('filter-brand-analysis', 'ReportController@productBrandAnalysisFilter')->name('product.brand.analysis.filter')->middleware(['auth', 'XSS']);
-
-
-Route::get('product-tax-analysis', 'ReportController@productTaxAnalysisView')->name('product.tax.analysis')->middleware(['auth', 'XSS']);
-Route::get('filter-purchase-tax-analysis', 'ReportController@productPurchaseTaxAnalysisFilter')->name('product.purchase.tax.analysis.filter')->middleware(['auth', 'XSS']);
-Route::get('filter-sale-tax-analysis', 'ReportController@productSaleTaxAnalysisFilter')->name('product.sale.tax.analysis.filter')->middleware(['auth', 'XSS']);
-
-
-Route::get('expense-analysis', 'ReportController@expenseAnalysisView')->name('expense.analysis')->middleware(['auth', 'XSS']);
-Route::get('filter-expense-analysis', 'ReportController@expenseAnalysisFilter')->name('expense.analysis.filter')->middleware(['auth', 'XSS']);
-
-
-Route::get('customer-sales-analysis', 'ReportController@customerSalesAnalysisView')->name('customer.sales.analysis')->middleware(['auth', 'XSS']);
-Route::get('filter-customer-sales-analysis', 'ReportController@customerSalesAnalysisFilter')->name('customer.sales.analysis.filter')->middleware(['auth', 'XSS']);
-
-
-Route::get('vendor-purchased-analysis', 'ReportController@vendorPurchasedAnalysisView')->name('vendor.purchased.analysis')->middleware(['auth', 'XSS']);
-Route::get('filter-vendor-purchased-analysis', 'ReportController@vendorPurchasedAnalysisFilter')->name('vendor.purchased.analysis.filter')->middleware(['auth', 'XSS']);
-
-Route::get('purchased-daily-analysis', 'ReportController@purchasedDailyAnalysisView')->name('purchased.daily.analysis')->middleware(['auth', 'XSS']);
-Route::get('purchased-monthly-analysis', 'ReportController@purchasedMonthlyAnalysisView')->name('purchased.monthly.analysis')->middleware(['auth', 'XSS']);
-Route::get('filter-purchased-daily-chart', 'ReportController@purchasedDailyChartFilter')->name('purchased.daily.chart.filter')->middleware(['auth', 'XSS']);
-Route::get('filter-purchased-monthly-chart', 'ReportController@purchasedMonthlyChartFilter')->name('purchased.monthly.chart.filter')->middleware(['auth', 'XSS']);
-
-Route::get('sold-daily-analysis', 'ReportController@soldDailyAnalysisView')->name('sold.daily.analysis')->middleware(['auth', 'XSS']);
-Route::get('sold-monthly-analysis', 'ReportController@soldMonthlyAnalysisView')->name('sold.monthly.analysis')->middleware(['auth', 'XSS']);
-Route::get('filter-sold-daily-chart', 'ReportController@soldDailyChartFilter')->name('sold.daily.chart.filter')->middleware(['auth', 'XSS']);
-Route::get('filter-sold-monthly-chart', 'ReportController@soldMonthlyChartFilter')->name('sold.monthly.chart.filter')->middleware(['auth', 'XSS']);
-
-Route::patch('update-payment-status/{slug}/{id}', 'ReportController@updatePaymentStatus')->name('update.payment.status')->middleware(['auth', 'XSS']);
-
-Route::resource('reports', 'ReportController')->middleware(['auth', 'XSS']);
-
-Route::get('get-cash-registers', 'CashRegisterController@getCashRegisters')->name('get.cash.registers')->middleware(['auth', 'XSS']);
-Route::resource('cashregisters', 'CashRegisterController')->middleware(['auth', 'XSS']);
-
-Route::resource('expenses', 'ExpenseController')->middleware(['auth', 'XSS']);
-Route::resource('expensecategories', 'ExpenseCategoryController')->middleware(['auth', 'XSS']);
-
-Route::resource('calendars', 'CalendarController')->middleware(['auth', 'XSS']);
-Route::resource('shipping', 'ShippingController')->middleware(['auth', 'XSS']);
-
-
-Route::patch('change-notificationstatus/{id}', 'NotificationController@changeNotificationStatus')->name('update.notification.status')->middleware(['auth']);
-Route::resource('notifications', 'NotificationController')->middleware(['auth']);
-
-Route::patch('changetodotatus/{id}', 'TodoController@changeTodoStatus')->name('todo.status')->middleware(['auth']);
-Route::resource('todos', 'TodoController')->middleware(['auth', 'XSS']);
-
-Route::get('/apply-coupon', ['as' => 'apply.coupon', 'uses' => 'CouponController@applyCoupon'])->middleware(['auth', 'XSS']);
-Route::resource('coupons', 'CouponController')->middleware(['auth', 'XSS']);;
-
-
-Route::resource('plans', 'PlanController')->middleware(['auth', 'XSS']);
-
+Route::get('order-receipt/{id}', 'OrderController@receipt')->name('order.receipt')->middleware('auth');
+Route::group(
+    [
+        'middleware' => [
+            'XSS',
+        ],
+    ], function (){
+    Route::resource('rating', 'RattingController');
+    Route::post('rating_view', 'RattingController@rating_view')->name('rating.rating_view');
+    Route::get('rating/{slug?}/product/{id}', 'RattingController@rating')->name('rating');
+    Route::post('stor_rating/{slug?}/product/{id}', 'RattingController@stor_rating')->name('stor_rating');
+    Route::post('edit_rating/product/{id}', 'RattingController@edit_rating')->name('edit_rating');
+}
+);
+Route::group(
+    [
+        'middleware' => [
+            'XSS',
+        ],
+    ], function (){
+    Route::resource('subscriptions', 'SubscriptionController');
+    Route::POST('subscriptions/{id}', 'SubscriptionController@store_email')->name('subscriptions.store_email');
+}
+);
 Route::group(
     [
         'middleware' => [
             'auth',
-            'XSS',
         ],
-    ],
-    function () {
-        Route::resource('plan_request', 'PlanRequestController');
-    }
+    ], function (){
+
+
+    Route::get(
+        '/product-variants/create', [
+                                      'as' => 'product.variants.create',
+                                      'uses' => 'ProductController@productVariantsCreate',
+                                  ]
+    );
+    Route::get(
+        '/get-product-variants-possibilities', [
+                                                 'as' => 'get.product.variants.possibilities',
+                                                 'uses' => 'ProductController@getProductVariantsPossibilities',
+                                             ]
+    );
+    Route::get('product/grid', 'ProductController@grid')->name('product.grid');
+    Route::delete('product/{id}/delete', 'ProductController@fileDelete')->name('products.file.delete');
+    Route::delete('product/variant/{id}/', 'ProductController@VariantDelete')->name('products.variant.delete');
+}
+);
+//=================================product import/export=============================
+Route::get('product/export', 'ProductController@fileExport')->name('product.export');
+Route::get('product/import/export', 'ProductController@fileImportExport')->name('product.file.import');
+Route::post('product/import', 'ProductController@fileImport')->name('product.import');
+
+Route::resource('product', 'ProductController')->middleware(['auth','XSS']);
+Route::post('product/{id}/update', 'ProductController@productUpdate')->name('products.update')->middleware('auth');
+Route::get(
+    'get-products-variant-quantity', [
+                                       'as' => 'get.products.variant.quantity',
+                                       'uses' => 'ProductController@getProductsVariantQuantity',
+                                   ]
+);
+Route::get(
+    '/store-resource/edit/display/{id}', [
+                          'as' => 'store-resource.edit.display',
+                          'uses' => 'StoreController@storeenable',
+                      ]
+)->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+Route::Put(
+    '/store-resource/display/{id}', [
+                     'as' => 'store-resource.display',
+                     'uses' => 'StoreController@storeenableupdate',
+                 ]
+)->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
 );
 
+Route::resource('store-resource', 'StoreController')->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
 
-Route::post('/plan-pay-with-paypal', ['as' => 'plan.pay.with.paypal', 'uses' => 'PaypalController@planPayWithPaypal'])->middleware(['auth', 'XSS']);
-Route::get('/{id}/plan-get-payment-status', ['as' => 'plan.get.payment.status', 'uses' => 'PaypalController@planGetPaymentStatus'])->middleware(['auth', 'XSS']);
+Route::get('page/{slug?}', 'StoreController@pageOptionSlug')->name('pageoption.slug');
+Route::get('store-blog/{slug?}', 'StoreController@StoreBlog')->name('store.blog');
+Route::get('store-blog-view/{slug?}/blog/{id}', 'StoreController@StoreBlogView')->name('store.store_blog_view');
 
+Route::get('store/{slug?}', 'StoreController@storeSlug')->name('store.slug');
+Route::get('store/{slug?}/categorie/{name?}', 'StoreController@product')->name('store.categorie.product');
+Route::get('user-cart-item/{slug?}/cart','StoreController@StoreCart')->name('store.cart');
+Route::get('user-address/{slug?}/useraddress', 'StoreController@userAddress')->name('user-address.useraddress');
+Route::get('store-payment/{slug?}/userpayment', 'StoreController@userPayment')->name('store-payment.payment');
+Route::get('store/{slug?}/product/{id}', 'StoreController@productView')->name('store.product.product_view');
+Route::post('user-product_qty/{slug?}/product/{id}/{variant_id?}', 'StoreController@productqty')->name('user-product_qty.product_qty');
+Route::post('customer/{slug}', 'StoreController@customer')->name('store.customer');
+Route::post('user-location/{slug}/location/{id}', 'StoreController@UserLocation')->name('user.location');
+Route::post('user-shipping/{slug}/shipping/{id}', 'StoreController@UserShipping')->name('user.shipping');
+Route::post('save-rating/{slug?}', 'StoreController@saverating')->name('store.saverating');
+Route::delete('delete_cart_item/{slug?}/product/{id}/{variant_id?}', 'StoreController@delete_cart_item')->name('delete.cart_item');
+Route::delete('delete_wishlist_item/{slug?}/product/{id}/', 'StoreController@delete_wishlist_item')->name('delete.wishlist_item');
+
+Route::get('store-complete/{slug?}/{id}', 'StoreController@complete')->name('store-complete.complete');
+
+Route::post('add-to-cart/{slug?}/{id}/{variant_id?}', 'StoreController@addToCart')->name('user.addToCart');
 
 Route::group(
-    [
-        'middleware' => [
-            'auth',
-            'XSS',
-        ],
-    ],
-    function () {
-
-        Route::get('change-language/{lang}', 'LanguageController@changeLanguage')->name('change.language');
-        Route::get('manage-language/{lang}', 'LanguageController@manageLanguage')->name('manage.language');
-        Route::post('store-language-data/{lang}', 'LanguageController@storeLanguageData')->name('store.language.data');
-        Route::get('create-language', 'LanguageController@createLanguage')->name('create.language');
-        Route::post('store-language', 'LanguageController@storeLanguage')->name('store.language');
-        Route::delete('lang/{lang}', ['as' => 'lang.destroy', 'uses' => 'LanguageController@destroyLang']);
-    }
+    ['middleware' => ['XSS']], function (){
+    Route::get('order', 'StripePaymentController@index')->name('order.index');
+    Route::get('/stripe/{code}', 'StripePaymentController@stripe')->name('stripe');
+    Route::post('/stripe/{slug?}', 'StripePaymentController@stripePost')->name('stripe.post');
+    Route::post('stripe-payment', 'StripePaymentController@addpayment')->name('stripe.payment');
+}
 );
 
+Route::post('pay-with-paypal/{slug?}', 'PaypalController@PayWithPaypal')->name('pay.with.paypal')->middleware(['XSS']);
 
+Route::get('{id}/get-payment-status{slug?}', 'PaypalController@GetPaymentStatus')->name('get.payment.status')->middleware(['XSS']);
+Route::get('{slug?}/customerorder/{id}', 'StoreController@customerorder')->name('customer.order');
+Route::get('{slug?}/order/{id}', 'StoreController@userorder')->name('user.order');
 
+Route::post('{slug?}/whatsapp', 'StoreController@whatsapp')->name('user.whatsapp');
+Route::post('{slug?}/telegram', 'StoreController@telegram')->name('user.telegram');
 
+Route::post('{slug?}/cod', 'StoreController@cod')->name('user.cod');
+Route::post('{slug?}/bank_transfer', 'StoreController@bank_transfer')->name('user.bank_transfer');
 
-Route::group(
+Route::get(
+    '/apply-coupon', [
+                       'as' => 'apply.coupon',
+                       'uses' => 'CouponController@applyCoupon',
+                   ]
+)->middleware(
     [
-        'middleware' => [
-            'auth',
-            'XSS',
-        ],
-    ],
-    function () {
-
-
-        Route::post('/test', ['as' => 'test.email', 'uses' => 'SystemController@testEmail']);
-        Route::post('/test/send', ['as' => 'test.email.send', 'uses' => 'SystemController@testEmailSend']);
-        Route::resource('systems', 'SystemController');
-        Route::post('system-settings', 'SystemController@saveSystemSettings')->name('system.settings');
-
-        Route::post('general-settings', 'SystemController@saveGeneralSettings')->name('general.settings');
-        Route::post('payment-settings', 'SystemController@savePaymentSettings')->name('payment.settings');
-        Route::post('invoice-footer-settings', 'SystemController@saveInvoiceFooterSettings')->name('invoice.footer.settings');
-        Route::post('template-settings', 'SystemController@saveTemplateSettings')->name('template.settings');
-    }
+        'auth',
+        'XSS',
+    ]
+);
+Route::get(
+    '/apply-productcoupon', [
+                              'as' => 'apply.productcoupon',
+                              'uses' => 'ProductCouponController@applyProductCoupon',
+                          ]
 );
 
+Route::get('productcoupon/import/export', 'ProductCouponController@fileImportExport')->name('productcoupon.file.import');
+Route::post('productcoupon/import', 'ProductCouponController@fileImport')->name('productcoupon.import');
+Route::get('productcoupon/export', 'ProductCouponController@fileExport')->name('productcoupon.export');
 
-
-//================================= Custom Landing Page ====================================//
-
-Route::get('/landingpage', 'LandingPageSectionController@index')->name('custom_landing_page.index')->middleware(['auth', 'XSS']);
-Route::get('/LandingPage/show/{id}', 'LandingPageSectionController@show');
-Route::post('/LandingPage/setConetent', 'LandingPageSectionController@setConetent')->middleware(['auth', 'XSS']);
-Route::get('/get_landing_page_section/{name}', function ($name) {
-    $plans = \DB::table('plans')->get();
-    return view('custom_landing_page.' . $name, compact('plans'));
-});
-Route::post('/LandingPage/removeSection/{id}', 'LandingPageSectionController@removeSection')->middleware(['auth', 'XSS']);
-Route::post('/LandingPage/setOrder', 'LandingPageSectionController@setOrder')->middleware(['auth', 'XSS']);
-Route::post('/LandingPage/copySection', 'LandingPageSectionController@copySection')->middleware(['auth', 'XSS']);
-
-
-
-//================================= Plan Payment Gateways  ====================================//
-
-Route::post('/plan-pay-with-paystack', ['as' => 'plan.pay.with.paystack', 'uses' => 'PaystackPaymentController@planPayWithPaystack'])->middleware(['auth', 'XSS']);
-Route::get('/plan/paystack/{pay_id}/{plan_id}', ['as' => 'plan.paystack', 'uses' => 'PaystackPaymentController@getPaymentStatus']);
-
-Route::post('/plan-pay-with-flaterwave', ['as' => 'plan.pay.with.flaterwave', 'uses' => 'FlutterwavePaymentController@planPayWithFlutterwave'])->middleware(['auth', 'XSS']);
-Route::get('/plan/flaterwave/{txref}/{plan_id}', ['as' => 'plan.flaterwave', 'uses' => 'FlutterwavePaymentController@getPaymentStatus']);
-
-Route::post('/plan-pay-with-razorpay', ['as' => 'plan.pay.with.razorpay', 'uses' => 'RazorpayPaymentController@planPayWithRazorpay'])->middleware(['auth', 'XSS']);
-Route::get('/plan/razorpay/{txref}/{plan_id}', ['as' => 'plan.razorpay', 'uses' => 'RazorpayPaymentController@getPaymentStatus']);
-
-Route::post('/plan-pay-with-paytm', ['as' => 'plan.pay.with.paytm', 'uses' => 'PaytmPaymentController@planPayWithPaytm'])->middleware(['auth', 'XSS']);
-Route::post('/plan/paytm/{plan}', ['as' => 'plan.paytm', 'uses' => 'PaytmPaymentController@getPaymentStatus']);
-
-Route::post('/plan-pay-with-mercado', ['as' => 'plan.pay.with.mercado', 'uses' => 'MercadoPaymentController@planPayWithMercado'])->middleware(['auth', 'XSS']);
-Route::post('/plan/mercado', ['as' => 'plan.mercado', 'uses' => 'MercadoPaymentController@getPaymentStatus']);
-
-Route::post('/plan-pay-with-mollie', ['as' => 'plan.pay.with.mollie', 'uses' => 'MolliePaymentController@planPayWithMollie'])->middleware(['auth', 'XSS']);
-Route::get('/plan/mollie/{plan}', ['as' => 'plan.mollie', 'uses' => 'MolliePaymentController@getPaymentStatus']);
-
-Route::post('/plan-pay-with-skrill', ['as' => 'plan.pay.with.skrill', 'uses' => 'SkrillPaymentController@planPayWithSkrill'])->middleware(['auth', 'XSS']);
-Route::get('/plan/skrill/{plan}', ['as' => 'plan.skrill', 'uses' => 'SkrillPaymentController@getPaymentStatus']);
-
-Route::post('/plan-pay-with-coingate', ['as' => 'plan.pay.with.coingate', 'uses' => 'CoingatePaymentController@planPayWithCoingate'])->middleware(['auth', 'XSS']);
-Route::get('/plan/coingate/{plan}', ['as' => 'plan.coingate', 'uses' => 'CoingatePaymentController@getPaymentStatus']);
-
-Route::post('paymentwall', ['as' => 'paymentwall', 'uses' => 'PaymentWallPaymentController@paymentwall']);
-Route::post('plan-pay-with-paymentwall/{plan}', ['as' => 'plan.pay.with.paymentwall', 'uses' => 'PaymentWallPaymentController@planPayWithPaymentwall']);
-Route::any('/plan/{flag}', 'PaymentWallPaymentController@paymenterror')->name('callback.error');  
-
-Route::group(
+Route::resource('coupons', 'CouponController')->middleware(
     [
-        'middleware' => [
-            'auth',
-            'XSS',
-        ],
-    ],
-    function () {
-        Route::get('orders', 'StripePaymentController@index')->name('order.index');
-        Route::get('/stripe/{code}', 'StripePaymentController@stripe')->name('stripe');
-        Route::post('/stripe', 'StripePaymentController@stripePost')->name('stripe.post');
-    }
+        'auth',
+        'XSS',
+    ]
 );
-
+Route::post(
+    'prepare-payment', [
+                         'as' => 'prepare.payment',
+                         'uses' => 'PlanController@preparePayment',
+                     ]
+)->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+Route::get(
+    '/payment/{code}', [
+                         'as' => 'payment',
+                         'uses' => 'PlanController@payment',
+                     ]
+)->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
 
 Route::post('plan-pay-with-paypal', 'PaypalController@planPayWithPaypal')->name('plan.pay.with.paypal')->middleware(
     [
@@ -333,52 +550,148 @@ Route::post('plan-pay-with-paypal', 'PaypalController@planPayWithPaypal')->name(
         'XSS',
     ]
 );
+Route::get('{id}/get-store-payment-status', 'PaypalController@storeGetPaymentStatus')->name('get.store.payment.status')->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+Route::get(
+    'qr-code', function (){
+    return QrCode::generate();
+}
+);
 
-Route::get('{id}/plan-get-payment-status', 'PaypalController@planGetPaymentStatus')->name('plan.get.payment.status')->middleware(
+Route::get('change-language-store/{slug?}/{lang}', 'LanguageController@changeLanquageStore')->name('change.languagestore')->middleware(['XSS']);
+
+Route::resource('product-coupon', 'ProductCouponController')->middleware(
     [
         'auth',
         'XSS',
     ]
 );
 
+//    Payments Callbacks
 
-Route::get('plan_request', 'PlanRequestController@index')->name('plan_request.index')->middleware(['auth', 'XSS',]);
-Route::get('request_frequency/{id}', 'PlanRequestController@requestView')->name('request.view')->middleware(['auth', 'XSS',]);
-Route::get('request_send/{id}', 'PlanRequestController@userRequest')->name('send.request')->middleware(['auth', 'XSS',]);
-Route::get('request_response/{id}/{response}', 'PlanRequestController@acceptRequest')->name('response.request')->middleware(['auth', 'XSS',]);
-Route::get('request_cancel/{id}', 'PlanRequestController@cancelRequest')->name('request.cancel')->middleware(['auth', 'XSS',]);
+Route::get('paystack/{slug}/{code}/{order_id}', 'PaymentController@paystackPayment')->name('paystack');
+Route::get('flutterwave/{slug}/{tran_id}/{order_id}', 'PaymentController@flutterwavePayment')->name('flutterwave');
+Route::get('razorpay/{slug}/{pay_id}/{order_id}', 'PaymentController@razerpayPayment')->name('razorpay');
+Route::post('{slug}/paytm/prepare-payments/', 'PaymentController@paytmOrder')->name('paytm.prepare.payments');
+Route::post('paytm/callback/', 'PaymentController@paytmCallback')->name('paytm.callback');
+Route::post('{slug}/mollie/prepare-payments/', 'PaymentController@mollieOrder')->name('mollie.prepare.payments');
+Route::get('{slug}/{order_id}/mollie/callback/', 'PaymentController@mollieCallback')->name('mollie.callback');
+Route::post('{slug}/mercadopago/prepare-payments/', 'PaymentController@mercadopagoPayment')->name('mercadopago.prepare');
+Route::any('{slug}/mercadopago/callback/', 'PaymentController@mercadopagoCallback')->name('mercado.callback');
+
+Route::post('{slug}/coingate/prepare-payments/', 'PaymentController@coingatePayment')->name('coingate.prepare');
+Route::get('coingate/callback', 'PaymentController@coingateCallback')->name('coingate.callback');
+
+Route::post('{slug}/skrill/prepare-payments/', 'PaymentController@skrillPayment')->name('skrill.prepare.payments');
+Route::get('skrill/callback', 'PaymentController@skrillCallback')->name('skrill.callback');
 
 
+//ORDER PAYMENTWALL
+Route::post('{slug}/paymentwall/store-slug/', 'StoreController@paymentwallstoresession')->name('paymentwall.session.store');
+Route::any('{slug}/order/error/{flag}', 'PaymentWallController@orderpaymenterror')->name('order.callback.error');
+Route::any('/{slug}/paymentwall/order',['as' => 'paymentwall.index','uses'=>'PaymentWallController@orderindex']);
+Route::post('/{slug}/order-pay-with-paymentwall/', ['as' => 'order.pay.with.paymentwall', 'uses' => 'PaymentWallController@orderPayWithPaymentwall']);
 
-// -------------------------------------import export------------------------------
+// Plan Purchase Payments methods
+
+Route::get('plan/prepare-amount', 'PlanController@planPrepareAmount')->name('plan.prepare.amount');
+Route::get('paystack-plan/{code}/{plan_id}', 'PaymentController@paystackPlanGetPayment')->name('paystack.plan.callback')->middleware(['auth']);
+Route::get('flutterwave-plan/{code}/{plan_id}', 'PaymentController@flutterwavePlanGetPayment')->name('flutterwave.plan.callback')->middleware(['auth']);
+Route::get('razorpay-plan/{code}/{plan_id}', 'PaymentController@razorpayPlanGetPayment')->name('razorpay.plan.callback')->middleware(['auth']);
+Route::post('mercadopago-prepare-plan', 'PaymentController@mercadopagoPaymentPrepare')->name('mercadopago.prepare.plan')->middleware(['auth']);
+Route::any('plan-mercado-callback/{plan_id}', 'PaymentController@mercadopagoPaymentCallback')->name('plan.mercado.callback')->middleware(['auth']);
+
+Route::post('paytm-prepare-plan', 'PaymentController@paytmPaymentPrepare')->name('paytm.prepare.plan')->middleware(['auth']);
+Route::post('paytm-payment-plan', 'PaymentController@paytmPlanGetPayment')->name('plan.paytm.callback')->middleware(['auth']);
+
+Route::post('mollie-prepare-plan', 'PaymentController@molliePaymentPrepare')->name('mollie.prepare.plan')->middleware(['auth']);
+Route::get('mollie-payment-plan/{slug}/{plan_id}', 'PaymentController@molliePlanGetPayment')->name('plan.mollie.callback')->middleware(['auth']);
+
+Route::post('coingate-prepare-plan', 'PaymentController@coingatePaymentPrepare')->name('coingate.prepare.plan')->middleware(['auth']);
+Route::get('coingate-payment-plan', 'PaymentController@coingatePlanGetPayment')->name('coingate.mollie.callback')->middleware(['auth']);
+
+Route::post('skrill-prepare-plan', 'PaymentController@skrillPaymentPrepare')->name('skrill.prepare.plan')->middleware(['auth']);
+Route::get('skrill-payment-plan', 'PaymentController@skrillPlanGetPayment')->name('plan.skrill.callback')->middleware(['auth']);
+Route::post('store/{slug?}', 'StoreController@changeTheme')->name('store.changetheme');
+Route::get('{slug?}/edit-products/{theme?}', 'StoreController@Editproducts')->name('store.editproducts')->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
+//PLAN PAYMENTWALL
+Route::post('/planpayment',['as' => 'paymentwall','uses'=>'PaymentWallController@planpay'])->middleware(['auth','XSS']);
+Route::post('/paymentwall-payment/{plan}',['as' => 'paymentwall.payment','uses' =>'PaymentWallController@planPayWithPaymentWall'])->middleware(['auth','XSS']);
 
 
-Route::get('export/customer', 'CustomerController@export')->name('customer.export');
-Route::get('import/customer/file', 'CustomerController@importFile')->name('customer.file.import');
-Route::post('import/customer', 'CustomerController@import')->name('customers.import');
+Route::post('{slug?}/store-edit-products/{theme?}', 'StoreController@StoreEditProduct')->name('store.storeeditproducts')->middleware(['auth']);
+Route::delete('{slug?}/{theme}/brand/{id}/delete/', 'StoreController@brandfileDelete')->name('brand.file.delete')->middleware(['auth']);
+
+//================================= Custom Landing Page ====================================//
 
 
-Route::get('export/vender', 'VendorController@export')->name('vendors.export');
-Route::get('import/vender/file', 'VendorController@importFile')->name('vendors.file.import');
-Route::post('import/vender', 'VendorController@import')->name('vendors.import');
+//================================= Custom Massage Page ====================================//
+Route::post('/store/custom-msg/{slug}', 'StoreController@customMassage')->name('customMassage');
+Route::post('store/get-massage/{slug}', 'StoreController@getWhatsappUrl')->name('get.whatsappurl');
+Route::get('store/remove-session/{slug}', 'StoreController@removeSession')->name('remove.session');
 
-Route::get('export/Quotation', 'QuotationController@export')->name('Quotation.export');
-Route::get('export/ProductsReturn', 'ProductsReturnController@export')->name('productsreturns.export');
-Route::get('export/Sale', 'SaleController@export')->name('Sale.export');
-Route::get('export/Purchase', 'PurchaseController@export')->name('Purchase.export');
-Route::get('export/Expense', 'ExpenseController@export')->name('Expense.export');
-Route::get('export/Product', 'ProductController@export')->name('Product.export');
-Route::get('import/Product', 'ProductController@import')->name('Product.import');
+//WISH LIST
+Route::get('store/{slug}/wishlist', 'StoreController@Wishlist')->name('store.wishlist');
+Route::post('store/{slug}/addtowishlist/{id}', 'StoreController@AddToWishlist')->name('store.addtowishlist');
 
-// recaptcha
-Route::post('/recaptcha-settings',['as' => 'recaptcha.settings.store','uses' =>'SystemController@recaptchaSettingStore'])->middleware(['auth','XSS']);
+Route::post('store/{slug}/downloadable_prodcut', 'StoreController@downloadable_prodcut')->name('user.downloadable_prodcut');
 
- // user reset password
- Route::any('user-reset-password/{id}', 'UserController@userPassword')->name('user.reset');
- Route::post('user-reset-password/{id}', 'UserController@userPasswordReset')->name('user.password.update');
 
- // copy link for purchase/sale
- Route::get('/purchase/invoice/{id}/', 'ReportController@purchaseLink')->name('purchase.link.copy');
- Route::get('/sale/invoice/{id}/', 'ReportController@saleLink')->name('sale.link.copy');
+// Email Templates
+Route::get('email_template_lang/{id}/{lang?}', 'EmailTemplateController@manageEmailLang')->name('manage.email.language')->middleware(['auth']);
+Route::put('email_template_store/{pid}', 'EmailTemplateController@storeEmailLang')->name('store.email.language')->middleware(['auth']);
+Route::put('email_template_status/{id}', 'EmailTemplateController@updateStatus')->name('status.email.language')->middleware(['auth']);
+Route::resource('email_template', 'EmailTemplateController')->middleware(
+    [
+        'auth',
+        'XSS',
+    ]
+);
 
- 
+//=================================Plan Request Module ====================================//
+Route::get('plan_request', 'PlanRequestController@index')->name('plan_request.index')->middleware(['auth','XSS',]);
+Route::get('request_frequency/{id}', 'PlanRequestController@requestView')->name('request.view')->middleware(['auth','XSS',]);
+Route::get('request_send/{id}', 'PlanRequestController@userRequest')->name('send.request')->middleware(['auth','XSS',]);
+Route::get('request_response/{id}/{response}', 'PlanRequestController@acceptRequest')->name('response.request')->middleware(['auth','XSS',]);
+Route::get('request_cancel/{id}', 'PlanRequestController@cancelRequest')->name('request.cancel')->middleware(['auth','XSS',]);
+
+
+/*=================================Customer Login==========================================*/
+
+Route::get('{slug}/user-create', 'StoreController@userCreate')->name('store.usercreate');
+Route::post('{slug}/user-create', 'StoreController@userStore')->name('store.userstore');
+
+Route::get('{slug}/customer-login','Customer\Auth\CustomerLoginController@showLoginForm')->name('customer.loginform');
+Route::post('{slug}/customer-login/{cart?}','Customer\Auth\CustomerLoginController@login')->name('customer.login');
+
+
+Route::get('{slug}/customer-home', 'StoreController@customerHome')->name('customer.home')->middleware('customerauth');
+
+Route::get('{slug}/customer-profile/{id}','Customer\Auth\CustomerLoginController@profile')->name('customer.profile')->middleware('customerauth');
+Route::put('{slug}/customer-profile/{id}','Customer\Auth\CustomerLoginController@profileUpdate')->name('customer.profile.update')->middleware('customerauth');
+Route::put('{slug}/customer-profile-password/{id}','Customer\Auth\CustomerLoginController@updatePassword')->name('customer.profile.password')->middleware('customerauth');
+Route::post('{slug}/customer-logout','Customer\Auth\CustomerLoginController@logout')->name('customer.logout');
+
+/*==================================Recaptcha====================================================*/
+
+Route::post('/recaptcha-settings',['as' => 'recaptcha.settings.store','uses' =>'SettingController@recaptchaSettingStore'])->middleware(['auth','XSS']);
+
+
+Route::get('/remove-coupn','StoreController@remcoup')->name('apply.removecoupn');
+
+Route::any('user-reset-password/{id}', 'StoreController@employeePassword')->name('user.reset');
+Route::post('user-reset-password/{id}', 'StoreController@employeePasswordReset')->name('user.password.update');
+
+// ===================================customer view==========================================
+
+Route::get('/customer','StoreController@customerindex')->name('customer.index');
+Route::get('/customer/view/{id}', 'StoreController@customershow')->name('customer.show');

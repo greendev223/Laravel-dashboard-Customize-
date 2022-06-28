@@ -164,7 +164,6 @@ return [
         Milon\Barcode\BarcodeServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,
 
-
         /*
          * Package Service Providers...
          */
@@ -181,7 +180,8 @@ return [
         RachidLaasri\LaravelInstaller\Providers\LaravelInstallerServiceProvider::class,
         Spatie\Permission\PermissionServiceProvider::class,
         Anand\LaravelPaytmWallet\PaytmWalletServiceProvider::class,
-        LivePixel\MercadoPago\Providers\MercadoPagoServiceProvider::class,
+        
+        
     ],
 
     /*
@@ -241,7 +241,8 @@ return [
         'PaytmWallet' => Anand\LaravelPaytmWallet\Facades\PaytmWallet::class,
         'MP' => LivePixel\MercadoPago\Facades\MP::class,
         'DNS1D' => Milon\Barcode\Facades\DNS1DFacade::class,
-		'DNS2D' => Milon\Barcode\Facades\DNS2DFacade::class,
+        'DNS2D' => Milon\Barcode\Facades\DNS2DFacade::class,
+        'QrCode' => SimpleSoftwareIO\QrCode\Facades\QrCode::class,
         'Excel' => Maatwebsite\Excel\Facades\Excel::class,
 
     ],

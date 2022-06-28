@@ -3,84 +3,196 @@
 namespace App\Models;
 
 use Carbon\Carbon;
-use Illuminate\Notifications\Notifiable;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use Notifiable;
     use HasRoles;
+    use Notifiable;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array
+     */
     protected $fillable = [
         'name',
         'email',
         'password',
-        'address',
-        'parent_id',
-        'branch_id',
-        'cash_register_id',
-        'lang',
-        'plan_expire_date',
-        'plan_id',
-        'is_active',
-        'user_status',
-        'last_login_at',
+        'currant_store',
+        'type',
+        'created_by',
     ];
 
+    /**
+     * The attributes that should be hidden for arrays.
+     *
+     * @var array
+     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @var array
+     */
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
 
-    public function setPasswordAttribute($password)
+
+
+    public function creatorId()
     {
-        $this->attributes['password'] = bcrypt($password);
+        if($this->type == 'Owner' || $this->type == 'super admin')
+        {
+            return $this->id;
+        }
+        else
+        {
+            return $this->created_by;
+        }
     }
 
-    public function getPlan()
+    public function currentLanguages()
     {
-        return $this->hasOne('App\Models\Plan', 'id', 'plan_id');
+        return $this->lang;
     }
 
-    public function branch()
+    public function countCompany()
     {
-        return $this->hasOne('App\Models\Branch','id','branch_id');
+        return User::where('type', '=', 'Owner')->where('created_by', '=', $this->creatorId())->count();
     }
 
-    public function cashregister()
+    public function countPaidCompany()
     {
-        return $this->hasOne('App\Models\CashRegister','id','cash_register_id');
+        return User::where('type', '=', 'Owner')->whereNotIn(
+            'plan', [
+                      0,
+                      1,
+                  ]
+        )->where('created_by', '=', \Auth::user()->id)->count();
     }
 
-    public function priceFormat($price)
+    public function assignPlan($planID)
     {
-        $settings = Utility::settings();
+        $plan = Plan::find($planID);
+        if($plan)
+        {
+            $this->plan = $plan->id;
+            if($plan->duration == 'Month')
+            {
+                $this->plan_expire_date = Carbon::now()->addMonths(1)->isoFormat('YYYY-MM-DD');
+            }
+            elseif($plan->duration == 'Year')
+            {
+                $this->plan_expire_date = Carbon::now()->addYears(1)->isoFormat('YYYY-MM-DD');
+            }
+            else
+            {
+                $this->plan_expire_date=null;
+            }
+            $this->save();
 
-        return (($settings['site_currency_symbol_position'] == "pre") ? $settings['site_currency_symbol'] : '') . number_format($price, 2) . (($settings['site_currency_symbol_position'] == "post") ? $settings['site_currency_symbol'] : '');
+            $users    = User::where('created_by', '=', \Auth::user()->creatorId())->where('type', '!=', 'super admin')->get();
+            $products = Product::where('created_by', '=', \Auth::user()->creatorId())->get();
+            $stores   = Store::where('created_by', '=', \Auth::user()->creatorId())->get();
+
+
+            if($plan->max_stores == -1)
+            {
+                foreach($stores as $store)
+                {
+                    $store->is_active = 1;
+                    $store->save();
+                }
+            }
+            else
+            {
+                $storeCount = 0;
+                foreach($stores as $store)
+                {
+                    $storeCount++;
+                    if($storeCount <= $plan->max_stores)
+                    {
+                        $store->is_active = 1;
+                        $store->save();
+                    }
+                    else
+                    {
+                        $store->is_active = 0;
+                        $store->save();
+                    }
+                }
+            }
+
+            if($plan->max_products == -1)
+            {
+                foreach($products as $product)
+                {
+                    $product->is_active = 1;
+                    $product->save();
+                }
+            }
+            else
+            {
+                $productCount = 0;
+                foreach($products as $product)
+                {
+                    $productCount++;
+                    if($productCount <= $plan->max_products)
+                    {
+                        $product->is_active = 1;
+                        $product->save();
+                    }
+                    else
+                    {
+                        $product->is_active = 0;
+                        $product->save();
+                    }
+                }
+            }
+
+            return ['is_success' => true];
+        }
+        else
+        {
+            return [
+                'is_success' => false,
+                'error' => 'Plan is deleted.',
+            ];
+        }
     }
 
-    public function currencySymbol()
+    public function countProducts()
     {
-        $settings = Utility::settings();
+        return Product::where('created_by', '=', $this->creatorId())->count();
+    }
 
-        return $settings['site_currency_symbol'];
-    }
-    public function barcodeFormat()
+    public function countStores($id)
     {
-        $settings = Utility::settings();
-        return isset($settings['barcode_format'])?$settings['barcode_format']:'code128';
+        return Store::where('created_by', $id)->count();
     }
-    public function barcodeType()
+
+    public function countStore()
     {
-        $settings = Utility::settings();
-        return isset($settings['barcode_type'])?$settings['barcode_type']:'css';
+        return Store::where('created_by', '=', $this->creatorId())->count();
+    }
+
+    public function currentPlan()
+    {
+        return $this->hasOne('App\Models\Plan', 'id', 'plan');
+    }
+
+    public function stores()
+    {
+        return $this->belongsToMany('App\Models\Store', 'user_stores', 'user_id', 'store_id')->withPivot('permission');
     }
 
     public function dateFormat($date)
@@ -90,168 +202,5 @@ class User extends Authenticatable
         return date($settings['site_date_format'], strtotime($date));
     }
 
-    public function timeFormat($time)
-    {
-        $settings = Utility::settings();
 
-        return date($settings['site_time_format'], strtotime($time));
-    }
-
-    public function datetimeFormat($datetime)
-    {
-        $settings = Utility::settings();
-
-        return date($settings['site_date_format'], strtotime($datetime)) . ' ' . date($settings['site_time_format'], strtotime($datetime));
-    }
-
-    // public function purchaseInvoiceNumberFormat($number)
-    // {  
-        
-    //     $settings = Utility::settings();
-
-    //     return $settings["purchase_invoice_prefix"] . sprintf("%05d", $number);
-    // }
-
-    public static function purchaseInvoiceNumberFormat($number)
-    {
-        // dd('ds');
-        $settings = Utility::settings();
-
-        return $settings["purchase_invoice_prefix"] . sprintf("%05d", $number);
-    }
-
-    public function purchaseInvoiceColor()
-    {
-        $settings = Utility::settings();
-
-        return $settings['purchase_invoice_color'];
-    }
-
-    public function sellInvoiceNumberFormat($number)
-    {
-        $settings = Utility::settings();
-
-        return $settings["sale_invoice_prefix"] . sprintf("%05d", $number);
-    }
-
-    public function sellInvoiceColor()
-    {
-        $settings = Utility::settings();
-
-        return $settings['sale_invoice_color'];
-    }
-
-    public function quotationInvoiceNumberFormat($number)
-    {
-        $settings = Utility::settings();
-
-        return $settings["quotation_invoice_prefix"] . sprintf("%05d", $number);
-    }
-
-    public function quotationInvoiceColor()
-    {
-        $settings = Utility::settings();
-
-        return $settings['quotation_invoice_color'];
-    }
-
-    public function getCreatedBy()
-    {
-        return ($this->parent_id == '0' || $this->parent_id == '1') ? $this->id : $this->parent_id;
-    }
-
-    public function isSuperAdmin()
-    {
-        return $this->parent_id == 0 && $this->branch_id == 0 && $this->cash_register_id == 0;
-    }
-
-    public function isOwner()
-    {
-        return $this->parent_id != 0 && $this->branch_id == 0 && $this->cash_register_id == 0;
-    }
-
-    public function isUser()
-    {
-        return $this->parent_id != 0 && $this->parent_id != 1;
-    }
-
-    public static function totalOwners()
-    {
-        return User::select('id', DB::raw('count(*) as count'))
-            ->where('parent_id', '!=', '0')
-            ->where('branch_id', '=', '0')
-            ->where('cash_register_id', '=', '0')
-            ->groupBy('id')
-            ->get()
-            ->count();
-    }
-
-    public static function countPaidOwners()
-    {
-        return User::where('parent_id', '!=', '0')
-                   ->where('branch_id', '=', '0')
-                   ->where('cash_register_id', '=', '0')
-                   ->where('parent_id', '=', Auth::user()->id)
-                   ->whereNotIn( 'plan_id', [ 0, 1 ] )
-                   ->count();
-    }
-
-    public function assignPlan($plan_id)
-    {
-        $plan = Plan::find($plan_id);
-        if($plan)
-        {
-            $this->plan_id = $plan->id;
-            if($plan->duration == 'month')
-            {
-                $this->plan_expire_date = Carbon::now()->addMonths(1)->isoFormat('YYYY-MM-DD');
-            }
-            else if($plan->duration == 'year')
-            {
-                $this->plan_expire_date = Carbon::now()->addYears(1)->isoFormat('YYYY-MM-DD');
-            }
-            else if($plan->duration == 'unlimited')
-            {
-                $this->plan_expire_date = null;
-            }
-            $this->save();
-
-            $users     = User::where('parent_id', '=', Auth::user()->getCreatedBy())->get();
-            $customers = Customer::where('created_by', '=', Auth::user()->getCreatedBy())->get();
-            $vendors   = Vendor::where('created_by', '=', Auth::user()->getCreatedBy())->get();
-
-            $userCount = 0;
-            foreach($users as $user)
-            {
-                $userCount++;
-                $user->is_active = $plan->max_users == -1 || $userCount <= $plan->max_users  ? 1 : 0;
-                $user->save();
-            }
-
-            $customerCount = 0;
-            foreach($customers as $customer)
-            {
-                $customerCount++;
-                $customer->is_active = $plan->max_customers == -1 ||$customerCount <= $plan->max_customers ? 1 : 0;
-                $customer->save();
-            }
-
-            $vendorCount = 0;
-            foreach($vendors as $vendor)
-            {
-                $vendorCount++;
-                $vendor->is_active = $plan->max_vendors == -1 ||$vendorCount <= $plan->max_vendors ? 1 : 0;
-                $vendor->save();
-            }
-
-            return ['is_success' => true];
-        }
-        else
-        {
-            return [
-                'is_success' => false,
-                'error' => __('Plan is deleted.'),
-            ];
-        }
-    }
 }

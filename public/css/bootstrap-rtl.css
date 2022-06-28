@@ -795,8 +795,3 @@ textarea.form-control.is-valid {
 .nav-tabs .nav-item:last-child {
     margin-right: 10px;
 }
-
-/*-----------------------Invoice template------------------------------_*/
-.d-right[data-v-f2a183a6] {
-    text-align: end;
-}

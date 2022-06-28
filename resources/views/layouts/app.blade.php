@@ -1,314 +1,77 @@
-@php
-$logo = asset(Storage::url('logo'));
-$company_favicon = App\Models\Utility::getValByName('company_favicon');
-$SITE_RTL = env('SITE_RTL');
-$setting = App\Models\Utility::colorset();
-$color = 'theme-3';
-if (!empty($setting['color'])) {
-    $color = $setting['color'];
-}
-
-if (\Auth::user()->type == 'Super Admin') {
-    $company_logo = Utility::get_superadmin_logo();
-} else {
-    $company_logo = Utility::get_company_logo();
-}
-@endphp
-
-
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" dir="{{ env('SITE_RTL') == 'on' ? 'rtl' : '' }}">
-
+<!doctype html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-    <title>
-        @if (trim($__env->yieldContent('page-title')))
-            @yield('page-title') -
-        @endif
-        {{ \App\Models\Utility::settings()['company_name'] != ''? \App\Models\Utility::settings()['company_name']: config('app.name', 'Our Store') }}
-    </title>
-
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0, minimal-ui" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ config('app.name', 'Laravel') }}</title>
+    <!-- Scripts -->
+    <script src="{{ asset('js/app.js') }}" defer></script>
+    <!-- Fonts -->
+    <link rel="dns-prefetch" href="//fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css?family=Nunito" rel="stylesheet">
 
-    {{-- {{ dd($company_favicon) }} --}}
-    <link rel="icon"
-        href="{{ $logo . '/' . (isset($company_favicon) && !empty($company_favicon) ? $company_favicon : 'favicon.png') }}"
-        type="image/png">
-
-    <!-- Favicon icon -->
-
-    <link rel="stylesheet" href="{{ asset('assets/css/plugins/main.css') }}">
-   
-    <link rel="stylesheet" href="{{ asset('assets/css/plugins/bootstrap-switch-button.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('custom/libs/animate.css/animate.min.css') }}">
-    <!-- font css -->
-    <link rel="stylesheet" href="{{ asset('assets/fonts/tabler-icons.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/fonts/feather.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/fonts/fontawesome.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/fonts/material.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/plugins/datepicker-bs5.min.css') }}">
-
-    <!-- vendor css -->
-    <link rel="stylesheet" href="{{ asset('assets/css/plugins/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/customizer.css') }}">
-
-    <link rel="stylesheet" href="{{ asset('custom/css/custom.css') }}">
-
-   
-
-    @if (env('SITE_RTL') == 'on')
-        <link rel="stylesheet" href="{{ asset('assets/css/style-rtl.css') }}" id="main-style-link">
-    @else
-        @if (isset($setting['cust_darklayout']) && $setting['cust_darklayout'] == 'on')
-            <link rel="stylesheet" href="{{ asset('assets/css/style-dark.css') }}">
-        @else
-            <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}" id="main-style-link">
-        @endif
-    @endif
-
-    @stack('old-datatable-css')
-    @stack('stylesheets')
-
+    <!-- Styles -->
+    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
 </head>
 
+<body>
 
+<div id="app">
+    <nav class="navbar navbar-expand-md navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url('/') }}">
+                {{ config('app.name', 'Laravel') }}
+            </a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
+                <span class="navbar-toggler-icon"></span>
+            </button>
 
-{{-- <body class="theme-1"> --}}
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <!-- Left Side Of Navbar -->
+                <ul class="navbar-nav mr-auto">
 
-<body class="{{ $color }}"    >
-    @include('sidenav')
-    @include('header')
+                </ul>
 
-    <div class="dash-container">
-        <div class="dash-content">
-            <!-- [ breadcrumb ] start -->
-            <div class="page-header">
-                <div class="page-block">
-                    <div class="row align-items-center">
-                        <div class="col-md-12">
-                            <div class="d-block d-sm-flex align-items-center justify-content-between">
-                                <div class="page-header-title">
+                <!-- Right Side Of Navbar -->
+                <ul class="navbar-nav ml-auto">
+                    <!-- Authentication Links -->
+                    @guest
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a>
+                        </li>
+                        @if (Route::has('register'))
+                            <li class="nav-item">
+                                <a class="nav-link" href="{{ route('register') }}">{{ __('Register') }}</a>
+                            </li>
+                        @endif
+                    @else
+                        <li class="nav-item dropdown">
+                            <a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" v-pre>
+                                {{ Auth::user()->name }} <span class="caret"></span>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                                <a class="dropdown-item" href="{{ route('logout') }}"
+                                   onclick="event.preventDefault();
+                                    document.getElementById('logout-form').submit();">
+                                    {{ __('Logout') }}
+                                </a>
 
-                                    <h4 class="m-b-10"> @yield('title')</h4>
-                                </div>
-                                <div class="col">
-                                    @yield('filter')
-                                </div>
-                                <div class="col-auto">
-                                    @yield('action-btn')
-                                </div>
+                                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                                    @csrf
+                                </form>
                             </div>
-                            <ul class="breadcrumb">
-                                @yield('breadcrumb')
-                            </ul>
-                            @yield('header-content')
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- <div class="row"> --}}
-                @yield('content')
-            {{-- </div> --}}
-
-        </div>
-    </div> 
-    @include('footer')
-
-    
-
-    <div class="modal fade" id="commonModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel"></h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="body">
-
-                </div>
-
+                        </li>
+                    @endguest
+                </ul>
             </div>
         </div>
-    </div>
+    </nav>
 
-
-
-    {{-- <input type="checkbox" class="d-none" id="cust-theme-bg"
-        {{ Utility::getValByName('cust_theme_bg') == 'on' ? 'checked' : '' }} />
-    <input type="checkbox" class="d-none" id="cust-darklayout"
-        {{ Utility::getValByName('cust_darklayout') == 'on' ? 'checked' : '' }} /> --}}
-
-
-    <script src="{{ asset('custom/js/jquery.min.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/popper.min.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/perfect-scrollbar.min.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/bootstrap.min.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/feather.min.js') }}"></script>
-    <script src="{{ asset('assets/js/dash.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/main.min.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/simple-datatables.js') }}"></script>
-    <script src="{{ asset('js/custom.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/bootstrap-switch-button.min.js') }}"></script>
-    <script src="{{ asset('custom/libs/bootstrap-notify/bootstrap-notify.min.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/sweetalert2.all.min.js') }}"></script>
-    <script src="{{ asset('assets/js/plugins/datepicker-full.min.js') }}"></script>
-    <script src="{{ asset('assets/js/pages/ac-datepicker.js') }}"></script>
-    <script src="{{ asset('custom/libs/moment/moment.js') }}"></script>
-
-    
-    <script>
-        if ($("#pc-dt-simple").length > 0) {
-            const dataTable = new simpleDatatables.DataTable("#pc-dt-simple");
-        }
-        
-    </script>
-    <!-- Apex Chart -->
-    <script src="{{ asset('assets/js/plugins/apexcharts.min.js') }}"></script>
-
-
-    <script>
-        $(document).ready(function() {
-             cust_theme_bg();
-            // cust_darklayout();
-
-
-            feather.replace();
-            var pctoggle = document.querySelector("#pct-toggler");
-            if (pctoggle) {
-                pctoggle.addEventListener("click", function() {
-                    if (
-                        !document.querySelector(".pct-customizer").classList.contains("active")
-                    ) {
-                        document.querySelector(".pct-customizer").classList.add("active");
-                    } else {
-                        document.querySelector(".pct-customizer").classList.remove("active");
-                    }
-                });
-            }
-
-            var themescolors = document.querySelectorAll(".themes-color > a");
-            for (var h = 0; h < themescolors.length; h++) {
-                var c = themescolors[h];
-
-                c.addEventListener("click", function(event) {
-                    var targetElement = event.target;
-                    if (targetElement.tagName == "SPAN") {
-                        targetElement = targetElement.parentNode;
-                    }
-                    var temp = targetElement.getAttribute("data-value");
-                    removeClassByPrefix(document.querySelector("body"), "theme-");
-                    document.querySelector("body").classList.add(temp);
-                });
-            }
-
-            function cust_theme_bg() {
-                var custthemebg = document.querySelector("#cust-theme-bg");
-                // custthemebg.addEventListener("click", function() {
-
-                if (custthemebg.checked) {
-                    document.querySelector(".dash-sidebar").classList.add("transprent-bg");
-                    document
-                        .querySelector(".dash-header:not(.dash-mob-header)")
-                        .classList.add("transprent-bg");
-                } else {
-                    document.querySelector(".dash-sidebar").classList.remove("transprent-bg");
-                    document
-                        .querySelector(".dash-header:not(.dash-mob-header)")
-                        .classList.remove("transprent-bg");
-                }
-                // });
-            }
-            var custthemebg = document.querySelector("#cust-theme-bg");
-            custthemebg.addEventListener("click", function() {
-                if (custthemebg.checked) {
-                    document.querySelector(".dash-sidebar").classList.add("transprent-bg");
-                    document
-                        .querySelector(".dash-header:not(.dash-mob-header)")
-                        .classList.add("transprent-bg");
-                } else {
-                    document.querySelector(".dash-sidebar").classList.remove("transprent-bg");
-                    document
-                        .querySelector(".dash-header:not(.dash-mob-header)")
-                        .classList.remove("transprent-bg");
-                }
-            });
-
-
-           
-
-            function removeClassByPrefix(node, prefix) {
-                for (let i = 0; i < node.classList.length; i++) {
-                    let value = node.classList[i];
-                    if (value.startsWith(prefix)) {
-                        node.classList.remove(value);
-                    }
-                }
-            }
-
-        });
-    </script>
-
-
-    @if (\App\Models\Utility::getValByName('gdpr_cookie') == 'on')
-        <script type="text/javascript">
-            var defaults = {
-                'messageLocales': {
-                    /*'en': 'We use cookies to make sure you can have the best experience on our website. If you continue to use this site we assume that you will be happy with it.'*/
-                    'en': "{{ \App\Models\Utility::getValByName('cookie_text') }}"
-                },
-                'buttonLocales': {
-                    'en': 'Ok'
-                },
-                'cookieNoticePosition': 'bottom',
-                'learnMoreLinkEnabled': false,
-                'learnMoreLinkHref': '/cookie-banner-information.html',
-                'learnMoreLinkText': {
-                    'it': 'Saperne di più',
-                    'en': 'Learn more',
-                    'de': 'Mehr erfahren',
-                    'fr': 'En savoir plus'
-                },
-                'buttonLocales': {
-                    'en': 'Ok'
-                },
-                'expiresIn': 30,
-                'buttonBgColor': '#d35400',
-                'buttonTextColor': '#fff',
-                'noticeBgColor': '#000',
-                'noticeTextColor': '#fff',
-                'linkColor': '#009fdd'
-            };
-        </script>
-
-        <script src="{{ asset('js/cookie.notice.js') }}"></script>
-    @endif
-
-
-
-
-    <script>
-        //     var toster_pos="{{ env('SITE_RTL') == 'on' ? 'left' : 'right' }}";
-        //
-    </script>
-
-    @stack('scripts')
-
-    @stack('old-datatable-js')
-
-    @if (Session::has('success'))
-        <script>
-            show_toastr("{{ __('Success') }}", "{!! session('success') !!}", 'success');
-        </script>
-    @endif
-    @if (Session::has('error'))
-        <script>
-            show_toastr("{{ __('Error') }}", "{!! session('error') !!}", 'error');
-        </script>
-    @endif
+    <main class="py-4">
+        @yield('content')
+    </main>
+</div>
 </body>
-
 </html>

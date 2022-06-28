@@ -2,111 +2,159 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Coupon;
+use App\Models\Order;
 use App\Models\Plan;
+use App\Models\PlanOrder;
+use App\Models\User;
 use App\Models\Utility;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 
 class PlanController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function index()
     {
-        if(Auth::user()->can('Manage Plan'))
+        $objUser = \Auth::user();
+        if($objUser->type == 'super admin' || $objUser->type == 'Owner')
         {
-            $plans = Plan::get();
-            $admin_payment_setting = Utility::getAdminPaymentSetting();            
+            if($objUser->type == 'super admin')
+            {
+                $orders = PlanOrder::select(
+                    [
+                        'plan_orders.*',
+                        'users.name as user_name',
+                    ]
+                )->join('users', 'plan_orders.user_id', '=', 'users.id')->orderBy('plan_orders.created_at', 'DESC')->get();
+            }
+            else
+            {
+                $orders = PlanOrder::select(
+                    [
+                        'plan_orders.*',
+                        'users.name as user_name',
+                    ]
+                )->join('users', 'plan_orders.user_id', '=', 'users.id')->orderBy('plan_orders.created_at', 'DESC')->where('users.id', '=', $objUser->id)->get();
+            }
 
-            return view('plans.index', compact('plans', 'admin_payment_setting'));
+            $plans = Plan::get();
+            $admin_payments_setting = Utility::getAdminPaymentSetting();
+            return view('plans.index', compact('plans', 'orders','admin_payments_setting'));
         }
         else
         {
-            return redirect()->back()->with('error', __('Permission denied.'));
+            return redirect()->route('dashboard');
         }
     }
 
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function create()
     {
-        if(Auth::user()->can('Create Plan'))
+        if(\Auth::user()->type == 'super admin')
         {
             $arrDuration = Plan::$arrDuration;
-
+           
             return view('plans.create', compact('arrDuration'));
         }
         else
         {
             return redirect()->back()->with('error', __('Permission denied.'));
         }
+
     }
 
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param \Illuminate\Http\Request $request
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function store(Request $request)
     {
-        if(Auth::user()->can('Create Plan'))
+
+        if(\Auth::user()->type == 'super admin')
         {
-            $validator = Validator::make(
-                $request->all(), [
-                                   'name' => 'required|unique:plans',
-                                   'price' => 'required|numeric|min:0',
-                                   'duration' => 'required',
-                                   'max_users' => 'required|numeric',
-                                   'max_customers' => 'required|numeric',
-                                   'max_vendors' => 'required|numeric',
-                               ]
-            );
+            $admin_payments_setting = Utility::getAdminPaymentSetting();
+            if((isset($admin_payments_setting['is_stripe_enabled']) && $admin_payments_setting['is_stripe_enabled'] == 'on')
+                || (isset($admin_payments_setting['is_paypal_enabled']) && $admin_payments_setting['is_paypal_enabled'] == 'on')
+                || (isset($admin_payments_setting['is_paystack_enabled']) && $admin_payments_setting['is_paystack_enabled'] == 'on')
+                || (isset($admin_payments_setting['is_flutterwave_enabled']) && $admin_payments_setting['is_flutterwave_enabled'] == 'on')
+                || (isset($admin_payments_setting['is_razorpay_enabled']) && $admin_payments_setting['is_razorpay_enabled'] == 'on')
+                || (isset($admin_payments_setting['is_mercado_enabled']) && $admin_payments_setting['is_mercado_enabled'] == 'on')
+            ){
+                $validation                 = [];
+                $validation['name']         = 'required|unique:plans';
+                $validation['price']        = 'required|numeric|min:0';
+                $validation['duration']     = 'required';
+                $validation['max_stores']   = 'required|numeric';
+                $validation['max_products'] = 'required|numeric';
 
-            if($validator->fails())
-            {
-                return redirect()->back()->with('error', $validator->errors()->first());
-            }
-
-            $plan       = new Plan();
-            $plan->name = $request->name;
-            if($request->price > 0)
-            {
-                $admin_payment_setting = Utility::getAdminPaymentSetting();
-                if(!empty($admin_payment_setting)  &&  ($admin_payment_setting['is_stripe_enabled'] == 'on' || $admin_payment_setting['is_paypal_enabled'] == 'on' || $admin_payment_setting['is_paystack_enabled'] == 'on' || $admin_payment_setting['is_flutterwave_enabled'] == 'on' || $admin_payment_setting['is_razorpay_enabled'] == 'on' || $admin_payment_setting['is_mercado_enabled'] == 'on' || $admin_payment_setting['is_paytm_enabled'] == 'on' || $admin_payment_setting['is_mollie_enabled'] == 'on' || $admin_payment_setting['is_skrill_enabled'] == 'on' || $admin_payment_setting['is_coingate_enabled'] == 'on'))
+                if($request->image)
                 {
+                    $validation['image'] = 'required|mimes:jpeg,png,jpg,gif,svg,pdf,doc|max:20480';
+                }
+
+                $request->validate($validation);
+                $post = $request->all();
+                if($request->hasFile('image'))
+                {
+                    $filenameWithExt = $request->file('image')->getClientOriginalName();
+                    $filename        = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+                    $extension       = $request->file('image')->getClientOriginalExtension();
+                    $fileNameToStore = 'plan_' . time() . '.' . $extension;
+
+                    $dir = storage_path('uploads/plan/');
+                    if(!file_exists($dir))
+                    {
+                        mkdir($dir, 0777, true);
+                    }
+                    $path          = $request->file('image')->storeAs('uploads/plan/', $fileNameToStore);
+                    $post['image'] = $fileNameToStore;
+                }
+
+                if(!isset($request->enable_custdomain))
+                {
+                    $post['enable_custdomain'] = 'off';
+                }
 
 
-                    $plan->price = $request->price;
+                if(!isset($request->enable_custsubdom2ain))
+                {
+                    $post['enable_custsubdomain'] = 'off';
+                }
+                if(!isset($request->additional_page))
+                {
+                    $post['additional_page'] = 'off';
+                }
+                if(!isset($request->blog))
+                {
+                    $post['blog'] = 'off';
+                }
+
+                if(Plan::create($post))
+                {
+                    return redirect()->back()->with('success', __('Plan created Successfully!'));
                 }
                 else
                 {
-                    return redirect()->back()->with('error', __('Please set stripe/paypal api key & secret key for add new plan'));
+                    return redirect()->back()->with('error', __('Something is wrong'));
                 }
             }
-
-            $plan->duration      = $request->duration;
-            $plan->max_users     = $request->max_users;
-            $plan->max_customers = $request->max_customers;
-            $plan->max_vendors   = $request->max_vendors;
-            $plan->description   = $request->description;
-
-            if($request->hasFile('image'))
+            else
             {
-                $validator = Validator::make(
-                    $request->all(), [
-                                       'image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:20480',
-                                   ]
-                );
-
-                if($validator->fails())
-                {
-                    return redirect()->back()->with('error', $validator->errors()->first());
-                }
-
-                $filenameWithExt = $request->file('image')->getClientOriginalName();
-                $filename        = pathinfo($filenameWithExt, PATHINFO_FILENAME);
-                $extension       = $request->file('image')->getClientOriginalExtension();
-                $fileNameToStore = $filename . '_' . time() . '.' . $extension;
-                $filepath        = $request->file('image')->storeAs('plans', $fileNameToStore);
-                $plan->image     = $filepath;
+                return redirect()->back()->with('error', __('Please set stripe/paypal api key & secret key for add new plan'));
             }
-            $plan->save();
-
-            return redirect()->route('plans.index')->with('success', __('Plan added successfully.'));
         }
         else
         {
@@ -114,9 +162,28 @@ class PlanController extends Controller
         }
     }
 
+    /**
+     * Display the specified resource.
+     *
+     * @param \App\Plan $plan
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function show(Plan $plan)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param \App\Plan $plan
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function edit($plan_id)
     {
-        if(Auth::user()->can('Edit Plan'))
+        if(\Auth::user()->type == 'super admin')
         {
             $arrDuration = Plan::$arrDuration;
             $plan        = Plan::find($plan_id);
@@ -127,112 +194,232 @@ class PlanController extends Controller
         {
             return redirect()->back()->with('error', __('Permission denied.'));
         }
+
     }
 
-    public function update(Request $request, Plan $plan)
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Plan $plan
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function update($planID, Request $request)
     {
-        if(Auth::user()->can('Edit Plan'))
+        if(\Auth::user()->type == 'super admin')
         {
-            if(!empty($plan))
-            {
-                $validator = Validator::make(
-                    $request->all(), [
-                                       'name' => 'required|unique:plans,name,' . $plan->id,
-                                       'duration' => 'required',
-                                       'max_users' => 'required|numeric',
-                                       'max_customers' => 'required|numeric',
-                                       'max_vendors' => 'required|numeric',
-                                   ]
-                );
-
-                if($validator->fails())
+            $admin_payments_setting = Utility::getAdminPaymentSetting();
+            if((isset($admin_payments_setting['is_stripe_enabled']) && $admin_payments_setting['is_stripe_enabled'] == 'on')
+            || (isset($admin_payments_setting['is_paypal_enabled']) && $admin_payments_setting['is_paypal_enabled'] == 'on')
+            || (isset($admin_payments_setting['is_paystack_enabled']) && $admin_payments_setting['is_paystack_enabled'] == 'on')
+            || (isset($admin_payments_setting['is_flutterwave_enabled']) && $admin_payments_setting['is_flutterwave_enabled'] == 'on')
+            || (isset($admin_payments_setting['is_razorpay_enabled']) && $admin_payments_setting['is_razorpay_enabled'] == 'on')
+            || (isset($admin_payments_setting['is_mercado_enabled']) && $admin_payments_setting['is_mercado_enabled'] == 'on')
+            ){
+                $plan = Plan::find($planID);
+                if($plan)
                 {
-                    return redirect()->back()->with('error', $validator->errors()->first());
-                }
-
-                $plan->name = $request->name;
-                if($request->price > 0)
-                {
-                    $admin_payment_setting = Utility::getAdminPaymentSetting();
-                    if($admin_payment_setting['is_stripe_enabled'] == 'on' || $admin_payment_setting['is_paypal_enabled'] == 'on' || $admin_payment_setting['is_paystack_enabled'] == 'on' || $admin_payment_setting['is_flutterwave_enabled'] == 'on' || $admin_payment_setting['is_razorpay_enabled'] == 'on' || $admin_payment_setting['is_mercado_enabled'] == 'on' || $admin_payment_setting['is_paytm_enabled'] == 'on' || $admin_payment_setting['is_mollie_enabled'] == 'on' || $admin_payment_setting['is_skrill_enabled'] == 'on' || $admin_payment_setting['is_coingate_enabled'] == 'on')
+                    if($plan->price > 0)
                     {
-
-                        $plan->price = $request->price;
+                        $validator = \Validator::make(
+                            $request->all(), [
+                                               'name' => 'required|unique:plans,name,' . $planID,
+                                               'price' => 'required|numeric|min:0',
+                                               'duration' => 'required',
+                                               'max_stores' => 'required|numeric',
+                                               'max_products' => 'required|numeric',
+                                           ]
+                        );
                     }
                     else
                     {
-                        return redirect()->back()->with('error', __('Please set stripe/paypal api key & secret key for add new plan'));
+                        $validator = \Validator::make(
+                            $request->all(), [
+                                               'name' => 'required|unique:plans,name,' . $planID,
+                                               'duration' => 'required',
+                                               'max_stores' => 'required|numeric',
+                                               'max_products' => 'required|numeric',
+                                               'image' => 'mimes:jpeg,png,jpg,gif,svg,pdf,doc|max:20480',
+                                           ]
+                        );
                     }
-                }
-                $plan->duration      = $request->duration;
-                $plan->max_users     = $request->max_users;
-                $plan->max_customers = $request->max_customers;
-                $plan->max_vendors   = $request->max_vendors;
-                $plan->description   = $request->description;
+                    {
 
-                if($request->hasFile('image'))
-                {
-                    $validator = Validator::make(
-                        $request->all(), [
-                                           'image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:20480',
-                                       ]
-                    );
-
+                    }
                     if($validator->fails())
                     {
-                        return redirect()->back()->with('error', $validator->errors()->first());
+                        $messages = $validator->getMessageBag();
+
+                        return redirect()->back()->with('error', $messages->first());
                     }
 
-                    $oldfilepath = $plan->image;
-                    if(asset(Storage::exists($oldfilepath)))
+                    $post = $request->all();
+                    if(!isset($request->enable_custdomain))
                     {
-                        asset(Storage::delete($oldfilepath));
+                        $post['enable_custdomain'] = 'off';
+                    }
+                    if(!isset($request->enable_custsubdomain))
+                    {
+                        $post['enable_custsubdomain'] = 'off';
+                    }
+                    if(!isset($request->additional_page))
+                    {
+                        $post['additional_page'] = 'off';
+                    }
+                    if(!isset($request->blog))
+                    {
+                        $post['blog'] = 'off';
+                    }
+                    if(!isset($request->shipping_method))
+                    {
+                        $post['shipping_method'] = 'off';
+                    }
+                    if($request->hasFile('image'))
+                    {
+                        $filenameWithExt = $request->file('image')->getClientOriginalName();
+                        $filename        = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+                        $extension       = $request->file('image')->getClientOriginalExtension();
+                        $fileNameToStore = 'plan_' . time() . '.' . $extension;
+
+                        $dir = storage_path('uploads/plan/');
+                        if(!file_exists($dir))
+                        {
+                            mkdir($dir, 0777, true);
+                        }
+                        $image_path = $dir . '/' . $plan->image;  // Value is not URL but directory file path
+                        if(\File::exists($image_path))
+                        {
+                            chmod($image_path, 0755);
+                            \File::delete($image_path);
+                        }
+
+                        $path          = $request->file('image')->storeAs('uploads/plan/', $fileNameToStore);
+                        $post['image'] = $fileNameToStore;
                     }
 
-                    $filenameWithExt = $request->file('image')->getClientOriginalName();
-                    $filename        = pathinfo($filenameWithExt, PATHINFO_FILENAME);
-                    $extension       = $request->file('image')->getClientOriginalExtension();
-                    $fileNameToStore = $filename . '_' . time() . '.' . $extension;
-                    $filepath        = $request->file('image')->storeAs('plans', $fileNameToStore);
-                    $plan->image     = $filepath;
+                    if($plan->update($post))
+                    {
+                        return redirect()->back()->with('success', __('Plan updated Successfully!'));
+                    }
+                    else
+                    {
+                        return redirect()->back()->with('error', __('Something is wrong'));
+                    }
                 }
-
-                $plan->save();
-
-                return redirect()->route('plans.index')->with('success', __('Plan updated successfully.'));
+                else
+                {
+                    return redirect()->back()->with('error', __('Plan not found'));
+                }
             }
             else
             {
-                return redirect()->back()->with('error', __('Plan not found.'));
+                return redirect()->back()->with('error', __('Please set stripe/paypal api key & secret key for add new plan'));
             }
         }
         else
         {
             return redirect()->back()->with('error', __('Permission denied.'));
         }
+
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param \App\Plan $plan
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($planID)
+    {
+
     }
 
     public function userPlan(Request $request)
     {
-        $user   = Auth::user();
-        $planID = Crypt::decrypt($request->code);
-        $plan   = Plan::find($planID);
+        $objUser = \Auth::user();
+        $planID  = \Illuminate\Support\Facades\Crypt::decrypt($request->code);
+        $plan    = Plan::find($planID);
         if($plan)
         {
-            if($plan->price <= 0)
+            if($plan->monthly_price <= 0)
             {
-                $user->assignPlan($plan->id);
+                $objUser->assignPlan($plan->id);
 
-                return redirect()->route('plans.index')->with('success', __('Plan Successfully activated.'));
+                return redirect()->route('plans.index')->with('success', __('Plan activated Successfully!'));
             }
             else
             {
-                return redirect()->back()->with('error', __('Something is wrong.'));
+                return redirect()->back()->with('error', __('Something is wrong'));
             }
         }
         else
         {
-            return redirect()->back()->with('error', __('Plan not found.'));
+            return redirect()->back()->with('error', __('Plan not found'));
         }
     }
+
+    public function payment($code)
+    {
+        $planID = \Illuminate\Support\Facades\Crypt::decrypt($code);
+        $plan   = Plan::find($planID);
+        if($plan)
+        {
+            return view('plans.payment', compact('plan'));
+        }
+        else
+        {
+            return redirect()->back()->with('error', __('Plan is deleted.'));
+        }
+    }
+
+    public function planPrepareAmount(Request $request){
+
+        $plan = Plan::find(\Illuminate\Support\Facades\Crypt::decrypt($request->plan_id));
+
+        if($plan)
+        {
+            $original_price = number_format($plan->price);
+            $coupons        = Coupon::where('code', strtoupper($request->coupon))->where('is_active', '1')->first();
+            $coupon_id = null;
+            if(!empty($coupons))
+            {
+                $usedCoupun = $coupons->used_coupon();
+                if($coupons->limit == $usedCoupun)
+                {
+                }
+                else
+                {
+                    $discount_value = ($plan->price / 100) * $coupons->discount;
+                    $plan_price     = $plan->price - $discount_value;
+                    $price          = $plan->price - $discount_value;
+                    $discount_value = '-' . $discount_value;
+                    $coupon_id = $coupons->id;
+                    return response()->json(
+                        [
+                            'is_success' => true,
+                            'discount_price' => $discount_value,
+                            'final_price' => $price,
+                            'price' => $plan_price,
+                            'coupon_id'=>$coupon_id,
+                            'message' => __('Coupon code has applied successfully.'),
+                        ]
+                    );
+                }
+            }
+            else
+            {
+                return response()->json(
+                    [
+                        'is_success' => true,
+                        'final_price' => $original_price,
+                        'coupon_id'=>$coupon_id,
+                        'price' => $plan->price,
+                    ]
+                );
+            }
+        }
+    }
+    
 }

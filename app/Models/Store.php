@@ -89,7 +89,7 @@ class Store extends Model
         $store        = static::query()->create($data);
 
         return $store;
-    }    
+    }
 
     public function currentLanguage()
     {

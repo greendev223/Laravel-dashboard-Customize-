@@ -2,45 +2,44 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Store;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Utility;
+use Auth;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Http\Request;
 
 class LanguageController extends Controller
 {
-    public function changeLanguage($lang)
+    public function changeLanquage($lang)
     {
-        if(Auth::user()->can('Change Language'))
-        {
-            $user       = Auth::user();
-            $user->lang = $lang;
-            $user->save();
+        $user       = Auth::user();
+        $user->lang = $lang;
+        $user->save();
 
-            return redirect()->back()->with('success', __('Language Changed Successfully!'));
-        }
-        else
-        {
-            return redirect()->back()->with('error', __('Permission denied.'));
-        }
+        return redirect()->back()->with('success', __('Language change successfully.'));
     }
 
     public function manageLanguage($currantLang)
     {
-        if(Auth::user()->isSuperAdmin() && Auth::user()->can('Manage Language'))
+        if(\Auth::user()->type == 'super admin')
         {
             $languages = Utility::languages();
-            $dir       = base_path() . '/resources/lang/' . $currantLang;
+
+            $dir = base_path() . '/resources/lang/' . $currantLang;
             if(!is_dir($dir))
             {
                 $dir = base_path() . '/resources/lang/en';
             }
             $arrLabel   = json_decode(file_get_contents($dir . '.json'));
             $arrFiles   = array_diff(
-                scandir($dir), ['..', '.']
+                scandir($dir), array(
+                                 '..',
+                                 '.',
+                             )
             );
             $arrMessage = [];
+
             foreach($arrFiles as $file)
             {
                 $fileName = basename($file, ".php");
@@ -51,7 +50,9 @@ class LanguageController extends Controller
                 }
             }
 
-            return view('languages.index', compact('languages', 'currantLang', 'arrLabel', 'arrMessage'));
+
+
+            return view('lang.index', compact('languages', 'currantLang', 'arrLabel', 'arrMessage'));
         }
         else
         {
@@ -61,29 +62,30 @@ class LanguageController extends Controller
 
     public function storeLanguageData(Request $request, $currantLang)
     {
-        if(Auth::user()->can('Create Language'))
+        
+        if(\Auth::user()->type == 'super admin')
         {
             $Filesystem = new Filesystem();
             $dir        = base_path() . '/resources/lang/';
             if(!is_dir($dir))
             {
                 mkdir($dir);
-                @chmod($dir, 0777);
+                chmod($dir, 0777);
             }
-
             $jsonFile = $dir . "/" . $currantLang . ".json";
+
             if(isset($request->label) && !empty($request->label))
             {
                 file_put_contents($jsonFile, json_encode($request->label));
             }
+
             $langFolder = $dir . "/" . $currantLang;
 
             if(!is_dir($langFolder))
             {
                 mkdir($langFolder);
-                @chmod($langFolder, 0777);
+                chmod($langFolder, 0777);
             }
-
             if(isset($request->message) && !empty($request->message))
             {
                 foreach($request->message as $fileName => $fileData)
@@ -95,12 +97,13 @@ class LanguageController extends Controller
                 }
             }
 
-            return redirect()->route('manage.language', [$currantLang])->with('success', __('Language Saved Successfully!'));
+            return redirect()->route('manage.language', [$currantLang])->with('success', __('Language save successfully.'));
         }
         else
         {
             return redirect()->back()->with('error', __('Permission denied.'));
         }
+
     }
 
     public function buildArray($fileData)
@@ -108,7 +111,14 @@ class LanguageController extends Controller
         $content = "";
         foreach($fileData as $lable => $data)
         {
-            $content .= "'$lable'=>[" . (is_array($data)) ? $this->buildArray($data) : addslashes($data) . "],";
+            if(is_array($data))
+            {
+                $content .= "'$lable'=>[" . $this->buildArray($data) . "],";
+            }
+            else
+            {
+                $content .= "'$lable'=>'" . addslashes($data) . "',";
+            }
         }
 
         return $content;
@@ -116,19 +126,12 @@ class LanguageController extends Controller
 
     public function createLanguage()
     {
-        if(Auth::user()->can('Create Language'))
-        {
-            return view('languages.create');
-        }
-        else
-        {
-            return redirect()->back()->with('error', __('Permission denied.'));
-        }
+        return view('lang.create');
     }
 
     public function storeLanguage(Request $request)
     {
-        if(Auth::user()->can('Create Language'))
+        if(\Auth::user()->type == 'super admin')
         {
             $Filesystem = new Filesystem();
             $langCode   = strtolower($request->code);
@@ -137,7 +140,7 @@ class LanguageController extends Controller
             if(!is_dir($dir))
             {
                 mkdir($dir);
-                @chmod($dir, 0777);
+                chmod($dir, 0777);
             }
             $dir      = $dir . '/' . $langCode;
             $jsonFile = $dir . ".json";
@@ -146,32 +149,49 @@ class LanguageController extends Controller
             if(!is_dir($dir))
             {
                 mkdir($dir);
-                @chmod($dir, 0777);
+                chmod($dir, 0777);
             }
             $Filesystem->copyDirectory($langDir . "en", $dir . "/");
 
-            return redirect()->route('manage.language', [$langCode])->with('success', __('Language Created Successfully!'));
+            return redirect()->route('manage.language', [$langCode])->with('success', __('Language successfully created.'));
         }
         else
         {
             return redirect()->back()->with('error', __('Permission denied.'));
         }
+
     }
 
     public function destroyLang($lang)
     {
-        $default_lang = env('DEFAULT_LANG') ?? 'en';
 
-        $langDir = base_path() . '/resources/lang/';
-        if(is_dir($langDir))
+        if(\Auth::user()->type == 'super admin')
         {
-            // remove directory and file
-            Utility::delete_directory($langDir . $lang);
-            unlink($langDir . $lang . '.json');
-            // update user that has assign deleted language.
-            User::where('lang', 'LIKE', $lang)->update(['lang' => $default_lang]);
+            $default_lang = env('default_language') ?? 'en';
+            $langDir      = base_path() . '/resources/lang/';
+            if(is_dir($langDir))
+            {
+                // remove directory and file
+                Utility::delete_directory($langDir . $lang);
+                unlink($langDir . $lang . '.json');
+                // update user that has assign deleted language.
+                User::where('lang', 'LIKE', $lang)->update(['lang' => $default_lang]);
+            }
         }
-        return redirect()->route('manage.language', [Auth::user()->lang])->with('success', __('Language Deleted Successfully!'));
+        else
+        {
+            return redirect()->back()->with('error', __('Permission denied.'));
+        }
+
+        return redirect()->route('manage.language', $default_lang)->with('success', __('Language Deleted Successfully.'));
+    }
+
+    public function changeLanquageStore($slug,$lang)
+    {
+        
+        session(['lang' => $lang]);
+
+       
+        return redirect()->back()->with('success', __('Language change successfully.'));
     }
 }
-

@@ -3,8 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class Plan extends Model
 {
@@ -12,20 +10,24 @@ class Plan extends Model
         'name',
         'price',
         'duration',
-        'max_users',
-        'max_customers',
-        'max_vendors',
-        'description',
+        'max_stores',
+        'max_products',
+        'enable_custdomain',
+        'enable_custsubdomain',
+        'additional_page',
+        'blog',
+        'shipping_method',
         'image',
+        'description',
     ];
 
     public static $arrDuration = [
         'Unlimited' => 'Unlimited',
-        'month' => 'Per Month',
-        'year' => 'Per Year',
+        'Month' => 'Per Month',
+        'Year' => 'Per Year',
     ];
 
-     public function status()
+    public function status()
     {
         return [
             __('Unlimited'),
@@ -34,25 +36,24 @@ class Plan extends Model
         ];
     }
 
-
-    public static function totalPlan()
+    public static function total_plan()
     {
         return Plan::count();
     }
 
-    public static function most_purchased_plan()
+    public static function most_purchese_plan()
     {
-        $plan =  User::select('users.plan_id', 'plans.name as planname', DB::raw('count(plan_id) as plans_occurrence'))
-                   ->join('plans', 'plans.id' ,'=', 'users.plan_id')
-                   ->where('users.parent_id', '!=', '0')
-                   ->where('users.branch_id', '=', '0')
-                   ->where('users.cash_register_id', '=', '0')
-                   ->where('users.parent_id', '=', Auth::user()->id)
-                   ->whereNotIn( 'users.plan_id', [ 0, 1 ] )
-                   ->orderBy('plans_occurrence', 'DESC')
-                   ->groupBy('users.plan_id')
-                   ->first();
+        $free_plan = Plan::where('price', '<=', 0)->first()->id;
 
-       return ($plan != null) ? $plan->planname : '';
+        return User:: select('plans.name', 'plans.id', \DB::raw('count(*) as total'))->join('plans', 'plans.id', '=', 'users.plan')->where('type', '=', 'owner')->where('plan', '!=', $free_plan)->orderBy('total', 'Desc')->groupBy('plans.name', 'plans.id')->first();
+    }
+
+    public function transkeyword()
+    {
+        $arr = [
+            __('Per Month'),
+            __('Per Year'),
+            __('Year'),
+        ];
     }
 }

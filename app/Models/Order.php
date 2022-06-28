@@ -37,18 +37,19 @@ class Order extends Model
         'created_by',
     ];
 
-    public function appliedCoupon()
-    {
-        return $this->hasOne('App\Models\UsersCoupons', 'order_id', 'order_id');
-    }
 
-    public static function totalOrders()
+    public static function total_orders()
     {
         return Order::count();
     }
 
-    public static function totalOrdersPrice()
+    public static function total_orders_price()
     {
-        return '$'.number_format(Order::sum('price'));
+        return Order::sum('price');
+    }
+
+    public function total_coupon_used()
+    {
+        return $this->hasOne('App\Models\UserCoupon', 'order', 'order_id');
     }
 }

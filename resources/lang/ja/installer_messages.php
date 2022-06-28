@@ -205,7 +205,7 @@ return [
          * Shared translations.
          *
          */
-        'title' => 'Laravel Updater',
+        'title' => 'Updater',
 
         /**
          *

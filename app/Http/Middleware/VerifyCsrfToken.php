@@ -13,6 +13,10 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         'plan/paytm/*',
-        'invoice/paytm/*'
+        'invoice/paytm/*',
+        'paytm-payment-plan',
+        'paymentwall-payment/*',
+        '/planpayment',
+        '*/order-pay-with-paymentwall'
     ];
 }

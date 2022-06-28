@@ -14,8 +14,9 @@ class Coupon extends Model
         'description',
     ];
 
+
     public function used_coupon()
     {
-        return $this->hasMany('App\Models\UsersCoupons', 'coupon_id', 'id')->count();
+        return $this->hasMany('App\Models\UserCoupon', 'coupon', 'id')->count();
     }
 }

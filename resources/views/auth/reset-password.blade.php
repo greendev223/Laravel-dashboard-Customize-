@@ -1,102 +1,55 @@
-@extends('layouts.master')
-
-@push('custom-scripts')
-@if(env('RECAPTCHA_MODULE') == 'yes')
-        {!! NoCaptcha::renderJs() !!}
-@endif
-@endpush
-
+@extends('layouts.auth')
+@section('title')
+    {{ __('Reset Password') }}
+@endsection
 @section('content')
-@php
-    $lang = (!empty(\Cookie::get('language'))) ? \Cookie::get('language') : 'en';
-@endphp
-
-<div class="change-language-front-form form-group auth-lang">
-    <select name="language" id="language" class="form-control" onchange="this.options[this.selectedIndex].value && (window.location = this.options[this.selectedIndex].value);">
-        @foreach(\App\Models\Utility::languages() as $language)
-            <option @if($lang == $language) selected @endif value="{{ route('login', $language) }}">{{Str::upper($language)}}</option>
-        @endforeach
-    </select>
-</div>
-<div class="col-sm-8 col-lg-4">
-    <div class="row justify-content-center mb-3">
-        <a class="navbar-brand" href="{{ route('home') }}">
-            <img src="{{ asset(Storage::url('logo/logo-blue.png')) }}" class="auth-logo">
-        </a>
-    </div>
-    <div class="card shadow zindex-100 mb-0">
-        <div class="card-body px-md-5 py-5">
-            <div class="mb-3">
-                <h6 class="h3">{{__('Reset Password')}}</h6>
+<div class="card">
+    <div class="row align-items-center text-start">
+        <div class="col-xl-6">
+            <div class="card-body">
+                <div class="">
+                    <h2 class="mb-3 f-w-600">{{ __('Reset Password') }}</h2>
+                </div>
+                <form method="POST" action="{{ route('password.update') }}">
+                    @csrf
+                    <input type="hidden" name="token" value="{{ $request->route('token') }}">
+                    <div class="form-group">
+                        {{Form::label('E-Mail Address',__('E-Mail Address'),array('class' => 'form-label'))}}
+                            <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ $email ?? old('email') }}" required autocomplete="email" autofocus>
+                        @error('email')
+                            <span class="invalid-feedback" role="alert">
+                                <strong>{{ $message }}</strong>
+                            </span>
+                        @enderror
+                    </div>
+                    <div class="form-group">
+                    {{Form::label('Password',__('Password'),array('class' => 'form-label'))}}
+                        <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="new-password">
+                        @error('password')
+                            <span class="invalid-feedback" role="alert">
+                                <strong>{{ $message }}</strong>
+                            </span>
+                        @enderror
+                    </div>
+                    <div class="form-group">
+                        {{Form::label('password-confirm',__('Confirm Password'),array('class' => 'form-label'))}}
+                        <input id="password-confirm" type="password" class="form-control" name="password_confirmation" required autocomplete="new-password">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-block mt-2">
+                            {{ __('Reset Password') }}
+                        </button>
+                    </div>
+                </form>
             </div>
-            <span class="clearfix"></span>
-            @if (session('error'))
-                <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                    <span class="alert-text">{{ session('error') }}</span>
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close" onclick="this.parentElement.style.display='none';">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-            @endif
-            @if($errors->any())
-                <span class="auth-errors">
-                    <h4>{{ $errors->first() }}</h4>
-                </span>
-            @endif
-            <form method="POST" action="{{ route('password.update') }}">
-                @csrf
-                <input type="hidden" name="token" value="{{ $request->route('token') }}">
-                @error('email')
-                <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                </span>
-                @enderror
-
-                @error('password')
-                <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
-                </span>
-                @enderror
-
-
-                <div class="form-group">
-                    <label class="form-control-label">{{ __('Email address') }}</label>
-                    <div class="input-group input-group-merge">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text"><i class="far fa-envelope"></i></span>
-                        </div>
-                        <input id="email" type="email"  placeholder="{{ __('Email') }}"
-                                class="form-control @error('email') is-invalid @enderror" name="email"
-                                value="{{ old('email') }}" required autocomplete="email" autofocus>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-control-label">{{ __('Password') }}</label>
-                    <div class="input-group input-group-merge input-group-alternative">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text"><i class="fas fa-key"></i></span>
-                        </div>
-                        <input id="password" type="password" placeholder="{{ __('Password') }}"
-                               class="form-control @error('password') is-invalid @enderror" name="password"
-                               required autocomplete="current-password">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="form-control-label">{{ __('Confirm Password') }}</label>
-                    <div class="input-group input-group-merge input-group-alternative">
-                        <div class="input-group-prepend">
-                            <span class="input-group-text"><i class="fas fa-key"></i></span>
-                        </div>
-                        <input id="password_confirmation" type="password" placeholder="{{ __('Confirm Password') }}"
-                               class="form-control" name="password_confirmation" required autocomplete="current-password">
-                    </div>
-                </div>
-
-                <div class="mt-4">
-                    <button type="submit" class="btn btn-sm btn-primary btn-icon rounded-pill login-do-btn">{{ __('Reset Password') }}</button>
-                </div>
-            </form>
+        </div>
+        <div class="col-xl-6 img-card-side">
+            <div class="auth-img-content">
+                <img src="{{ asset('assets/images/auth/img-auth-3.svg') }}" alt="" class="img-fluid">
+                <h3 class="text-white mb-4 mt-5"> {{ __('“Attention is the new currency”') }}</h3>
+                <p class="text-white"> {{__('The more effortless the writing looks, the more effort the writer
+                    actually put into the process.')}}</p>
+            </div>
         </div>
     </div>
 </div>

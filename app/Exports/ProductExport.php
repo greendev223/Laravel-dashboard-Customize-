@@ -3,55 +3,84 @@
 namespace App\Exports;
 
 use App\Models\Product;
+use App\Models\User;
+use App\Models\Store;
+use App\Models\ProductTax;
+use App\Models\ProductCategorie;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
-use Illuminate\Support\Facades\Auth;
 
 class ProductExport implements FromCollection, WithHeadings
 {
     /**
-     * @return \Illuminate\Support\Collection
-     */
+    * @return \Illuminate\Support\Collection
+    */
     public function collection()
     {
-        $data = Product::get();
-      
-        foreach ($data as $k => $Product) {
+     
+        $user             = \Auth::user();
+        $storeid         = Store::where('id', $user->current_store)->first();
+       
+        $data           = Product::where('store_id', $storeid->id)->get();
+        
+        
+        foreach($data as $k => $product)
+        {
+        	$store_id=Store::find($product->store_id);
+        	$store=isset($store_id)?$store_id->name:'';
 
-            $taxe  = Product::tax($Product->tax_id);
-            $unit  = Product::unit($Product->unit_id);
-            $category  = Product::Category($Product->category_id);
-            $brand  = Product::Brand($Product->brand_id);
+        	$product_taxs=ProductTax::find($product->product_tax);
+        	$product_tax=isset($product_taxs)?$product_taxs->name:'';
 
-            
-            unset($Product->id,$Product->sku,$Product->image,$Product->created_by, $Product->updated_at, $Product->created_at);
+        	$product_categories=ProductCategorie::find($product->product_categorie);
+        	$product_categorie=isset($product_categories)?$product_categories->name:'';
 
-            $data[$k]["id"]                = $Product->id;
-            $data[$k]["tax_id"]        = $taxe;
-            $data[$k]["unit_id"]          = $unit;
-            $data[$k]["category_id"]   = $category;
-            $data[$k]["brand_id"]   = $brand;
-
-
+        	$created_bys=User::find($product->created_by);
+        	$created_by=isset($created_bys)?$created_bys->name:'';
+        	
+        	 $data[$k]["store_id"]=$store;
+        	 $data[$k]["product_tax"]=$product_tax;
+        	 $data[$k]["product_categorie"]=$product_categorie;
+        	 $data[$k]["created_by"]=$created_by;
+           
         }
-
+       
+        
         return $data;
     }
-
     public function headings(): array
     {
         return [
-            "name",
-            "slug",
-            "purchase_price",
-            "sale_price",
-            "description",
-            "quantity",
-            "tax_Name",
-            "unit_Name",
-            "category_Name",
-            "brand_Name",
-            "product_type",
+            "Product Id",
+            "Store Name",
+            "Product Name",
+            "Product Categorie",
+            "Price",
+            "Last Price",
+            "Quantity",
+            "SKU",
+            "Product Tax",
+            "Custom_Field_1",
+            "Custom_Value_1",
+            "Custom_field_2",
+            "Custom_value_2",
+            "Custom_field_3",
+            "Custom_value_3",
+            "Custom_field_4",
+            "Custom_value_4",
+            "Product Display",
+            "Downloadable Prodcut",
+            "Enable_Product_Variant",
+            "Variants_Json",
+            "Is_Cover",
+            "Attachment",
+            "Is_Active",
+            "Description",
+            "Detail",
+            "Specification",
+            "Created_by",
+            "Created_at",
+            "updated_at",
         ];
     }
 }

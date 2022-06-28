@@ -31,11 +31,13 @@ class PasswordResetLinkController extends Controller
         if(env('RECAPTCHA_MODULE') == 'yes')
         {
             $validation['g-recaptcha-response'] = 'required|captcha';
-        }else{
+        }
+        else
+        {
             $validation=[];
         }
         $this->validate($request, $validation);
-
+        
         $request->validate([
             'email' => 'required|email',
         ]);
@@ -43,13 +45,12 @@ class PasswordResetLinkController extends Controller
         // We will send the password reset link to this user. Once we have attempted
         // to send the link, we will examine the response then see the message we
         // need to show to the user. Finally, we'll send out a proper response.
-            
         try{
 
-            $status = Password::sendResetLink(
+                $status = Password::sendResetLink(
                 $request->only('email')
             );
-    
+
             return $status == Password::RESET_LINK_SENT
                         ? back()->with('status', __($status))
                         : back()->withInput($request->only('email'))
@@ -61,5 +62,6 @@ class PasswordResetLinkController extends Controller
             return redirect()->back()->withErrors('E-Mail has been not sent due to SMTP configuration');
             
         }
+        
     }
 }

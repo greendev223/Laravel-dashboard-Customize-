@@ -2,192 +2,107 @@
 
 namespace App\Models;
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\DB;
 
 class Product extends Model
 {
     protected $fillable = [
         'name',
-        'slug',
-        'sku',
-        'purchase_price',
-        'sale_price',
-        'description',
+        'product_categorie',
+        'price',
         'quantity',
-        'tax_id',
-        'unit_id',
-        'category_id',
-        'brand_id',
-        'image',
-        'product_type',
+        'SKU',
+        'product_tax',
+        'product_display',
+        'rating_display',
+        'is_cover',
+        'description',
+        'detail',
+        'specification',
         'created_by',
     ];
 
-    public function taxes()
+    public function categories()
     {
-        return $this->hasOne('App\Models\Tax', 'id', 'tax_id');
+        return $this->hasOne('App\Models\ProductCategorie', 'id', 'product_categorie');
     }
 
-    public static function getallproducts()
+    public function product_taxs()
     {
-        return Product::select('products.*', 'b.name as brandname', 'c.name as categoryname')
-                    ->leftjoin('brands as b', 'b.id', '=', 'products.brand_id')
-                    ->leftjoin('categories as c', 'c.id', '=', 'products.category_id')
-                    ->where('products.created_by', '=', Auth::user()->getCreatedBy())
-                    ->orderBy('products.id', 'DESC');
+        return $this->hasOne('App\Models\ProductTax', 'id', 'product_tax');
     }
 
-    public static function tax_id($product_id)
+    public function product_category()
     {
-        $results = DB::select(
-            DB::raw("SELECT IFNULL( (SELECT tax_id from products where id = :id and created_by = :created_by limit 1),  '0') as tax_id"), [ 'id' => $product_id,  'created_by' => Auth::user()->getCreatedBy(),]
-        );
-        return $results[0]->tax_id;
+        $result = ProductCategorie::whereIn('id', explode(',', $this->product_categorie))->get()->pluck('name')->toArray();
+
+        return implode(', ', $result);
     }
 
-    public function getTotalProductQuantity()
+    public function product_rating()
     {
-        $totalquantity = $purchasedquantity = $selledquantity = 0;
-        $authuser = Auth::user();
-        $product_id = $this->id;
-
-        $purchases = Purchase::where('created_by', $authuser->getCreatedBy());
-
-        if ($authuser->isUser())
+        $ratting    = Ratting::where('product_id', $this->id)->where('rating_view', 'on')->sum('ratting');
+        $user_count = Ratting::where('product_id', $this->id)->where('rating_view', 'on')->count();
+        if($user_count > 0)
         {
-            $purchases = $purchases->where('branch_id', $authuser->branch_id)->where('cash_register_id', $authuser->cash_register_id);
+            $avg_rating = number_format($ratting / $user_count, 1);
+        }
+        else
+        {
+            $avg_rating = number_format($ratting / 1, 1);
+
         }
 
-        foreach($purchases->get() as $purchase)
-        {
-            $purchaseditem = PurchasedItems::select('quantity')->where('purchase_id', $purchase->id)->where('product_id', $product_id)->first();
-            $purchasedquantity += $purchaseditem != null ? $purchaseditem->quantity : 0;
-        }
-
-        $sells = Sale::where('created_by', $authuser->getCreatedBy());
-
-        if ($authuser->isUser())
-        {
-            $sells = $sells->where('branch_id', $authuser->branch_id)->where('cash_register_id', $authuser->cash_register_id);
-        }
-
-        foreach($sells->get() as $sell)
-        {
-            $selleditem = SelledItems::select('quantity')->where('sell_id', $sell->id)->where('product_id', $product_id)->first();
-            $selledquantity += $selleditem != null ? $selleditem->quantity : 0;
-        }
-
-        $totalquantity = $purchasedquantity - $selledquantity;
-
-        return $totalquantity;
+        return $avg_rating;
     }
 
-    public function getProductQuantityByBranch($data)
+    public static function getCategoryById($productId)
     {
-        $totalquantity = $purchasedquantity = $selledquantity = 0;
-        $authuser = Auth::user();
-        $product_id = $this->id;
+        $product = Product::find($productId);
 
-        $purchases = Purchase::where('created_by', $authuser->getCreatedBy());
-        $sells = Sale::where('created_by', $authuser->getCreatedBy());
+        $result = ProductCategorie::whereIn('id', explode(',', $product->product_categorie))->get()->pluck('name')->toArray();
 
-        if ($data['branch_id'] != '-1')
-        {
-            $purchases = $purchases->where('branch_id', $data['branch_id']);
-            $sells = $sells->where('branch_id', $data['branch_id']);
-        }
-
-        if ($data['cash_register_id'] != '-1')
-        {
-            $purchases = $purchases->where('cash_register_id', $data['cash_register_id']);
-            $sells = $sells->where('cash_register_id', $data['cash_register_id']);
-        }
-
-        if($data['start_date'] != '' && $data['end_date'] != '')
-        {
-            $purchases = $purchases->whereDate('created_at', '>=', $data['start_date'])->whereDate('created_at', '<=', $data['end_date']);
-            $sells = $sells->whereDate('created_at', '>=', $data['start_date'])->whereDate('created_at', '<=', $data['end_date']);
-        }
-        else if($data['start_date'] != '' || $data['end_date'] != '')
-        {
-            $date     = $data['start_date'] == '' ? ($data['end_date'] == '' ? '' : $data['end_date']) : $data['start_date'];
-            $purchases = $purchases->whereDate('created_at', '=', $date);
-            $sells = $sells->whereDate('created_at', '=', $date);
-        }
-
-        foreach($purchases->get() as $purchase)
-        {
-            $purchaseditem = PurchasedItems::select('quantity')->where('purchase_id', $purchase->id)->where('product_id', $product_id)->first();
-            $purchasedquantity += $purchaseditem != null ? $purchaseditem->quantity : 0;
-        }
-
-        foreach($sells->get() as $sell)
-        {
-            $selleditem = SelledItems::select('quantity')->where('sell_id', $sell->id)->where('product_id', $product_id)->first();
-            $selledquantity += $selleditem != null ? $selleditem->quantity : 0;
-        }
-
-        $totalquantity = $purchasedquantity - $selledquantity;
-
-        return $totalquantity;
+        return implode(', ', $result);
     }
 
-    public static function tax($taxe)
+    public static function getRatingById($productId)
     {
-        $categoryArr  = explode(',', $taxe);
-        $unitRate = 0;
-        foreach($categoryArr as $taxe)
+        $ratting    = Ratting::where('product_id', $productId)->where('rating_view', 'on')->sum('ratting');
+        $user_count = Ratting::where('product_id', $productId)->where('rating_view', 'on')->count();
+        if($user_count > 0)
         {
-            $taxe    = Tax::find($taxe);
-            $unitRate        = (!empty($taxe->name) ? $taxe->name : '');
-            
+            $avg_rating = number_format($ratting / $user_count, 1);
+        }
+        else
+        {
+            $avg_rating = number_format($ratting / 1, 1);
+
         }
 
-        return $unitRate;
+        return $avg_rating;
     }
 
-    public static function unit($unit)
+    public static function possibleVariants($groups, $prefix = '')
     {
-        $categoryArr  = explode(',', $unit);
-        $unitRate = 0;
-        foreach($categoryArr as $unit)
+        $result = [];
+        $group  = array_shift($groups);
+        foreach($group as $selected)
         {
-            $unit    = Unit::find($unit);
-            $unitRate        = (!empty($unit->name) ? $unit->name : '');
-            
+            if($groups)
+            {
+                $result = array_merge($result, self::possibleVariants($groups, $prefix . $selected . ' : '));
+            }
+            else
+            {
+                $result[] = $prefix . $selected;
+            }
         }
 
-        return $unitRate;
+        return $result;
     }
 
-    public static function Category($category)
+    public function product_img()
     {
-        $categoryArr  = explode(',', $category);
-        $categoryRate = 0;
-        foreach($categoryArr as $category)
-        {
-            $category    = Category::find($category);
-            $categoryRate        = (!empty($category->name) ? $category->name :'');
-            
-        }
-
-        return $categoryRate;
+        return $this->hasOne('App\Models\product_images', 'product_id', 'id');
     }
-
-    public static function Brand($brand)
-    {
-        $categoryArr  = explode(',', $brand);
-        $brandRate = 0;
-        foreach($categoryArr as $brand)
-        {
-            $brand    = Brand::find($brand);
-            $brandRate        = (!empty($brand->name) ? $brand->name :'');
-            
-        }
-
-        return $brandRate;
-    }
-
 }

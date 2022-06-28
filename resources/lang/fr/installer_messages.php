@@ -7,14 +7,13 @@ return [
      * Shared translations.
      *
      */
-    'title' => 'Installateur de Laravel',
-    'next' => 'Suivant',
-    'back' => 'Précedent',
-    'finish' => 'Installer',
+    'title' => 'Installer',
+    'next' => 'Next Step',
+    'back' => 'Previous',
+    'finish' => 'Install',
     'forms' => [
-        'errorTitle' => 'Les erreurs suivantes sont survenues:',
+        'errorTitle' => 'The Following errors occurred:',
     ],
-
 
     /**
      *
@@ -22,11 +21,11 @@ return [
      *
      */
     'welcome' => [
-        'title'   => 'Bienvenue dans l’installateur...',
-        'message' => 'Assistant d\'installation et de configuration facile.',
-        'next'    => 'Vérifier les prérequis',
+        'templateTitle' => 'Welcome',
+        'title'   => 'Installer',
+        'message' => 'Easy Installation and Setup Wizard.',
+        'next'    => 'Check Requirements',
     ],
-
 
     /**
      *
@@ -34,11 +33,10 @@ return [
      *
      */
     'requirements' => [
-        'templateTitle' => 'Étape 1 | Prérequis du serveur',
-        'title' => 'Prérequis du serveur',
-        'next'    => 'Vérifier les Permissions',
+        'templateTitle' => 'Step 1 | Server Requirements',
+        'title' => 'Server Requirements',
+        'next'    => 'Check Permissions',
     ],
-
 
     /**
      *
@@ -46,11 +44,10 @@ return [
      *
      */
     'permissions' => [
-        'templateTitle' => 'Étape 2 | Permissions',
+        'templateTitle' => 'Step 2 | Permissions',
         'title' => 'Permissions',
-        'next' => 'Configurer l\'Environment',
+        'next' => 'Configure Environment',
     ],
-
 
     /**
      *
@@ -59,22 +56,22 @@ return [
      */
     'environment' => [
         'menu' => [
-            'templateTitle' => 'Étape 3 | Paramètres d\'environnement',
-            'title' => 'Paramètres d\'environnement',
-            'desc' => 'Veuillez sélectionner comment vous souhaitez configurer les applications <code>.env</code> file.',
-            'wizard-button' => 'Configuration de l\'assistant de formulaire',
-            'classic-button' => 'Éditeur de texte classique',
+            'templateTitle' => 'Step 3 | Environment Settings',
+            'title' => 'Environment Settings',
+            'desc' => 'Please select how you want to configure the apps <code>.env</code> file.',
+            'wizard-button' => 'Form Wizard Setup',
+            'classic-button' => 'Classic Text Editor',
         ],
         'wizard' => [
-            'templateTitle' => 'Étape 3 | Paramètres d\'environnement | Assistant guidé',
-            'title' => 'Assitant <code>.env</code> Guidé',
+            'templateTitle' => 'Step 3 | Environment Settings | Guided Wizard',
+            'title' => 'Guided <code>.env</code> Wizard',
             'tabs' => [
-                'environment' => 'Environnement',
-                'database' => 'Base de donnée',
+                'environment' => 'Environment',
+                'database' => 'Database',
                 'application' => 'Application'
             ],
             'form' => [
-                'name_required' => 'Un nom d\'environnement est requis.',
+                'name_required' => 'An environment name is required.',
                 'app_name_label' => 'App Name',
                 'app_name_placeholder' => 'App Name',
                 'app_environment_label' => 'App Environment',
@@ -83,7 +80,7 @@ return [
                 'app_environment_label_qa' => 'Qa',
                 'app_environment_label_production' => 'Production',
                 'app_environment_label_other' => 'Other',
-                'app_environment_placeholder_other' => 'Entrez votre environnement...',
+                'app_environment_placeholder_other' => 'Enter your environment...',
                 'app_debug_label' => 'App Debug',
                 'app_debug_label_true' => 'True',
                 'app_debug_label_false' => 'False',
@@ -115,7 +112,7 @@ return [
                 'db_password_placeholder' => 'Database Password',
 
                 'app_tabs' => [
-                    'more_info' => 'Plus d\'informations',
+                    'more_info' => 'More Info',
                     'broadcasting_title' => 'Broadcasting, Caching, Session, &amp; Queue',
                     'broadcasting_label' => 'Broadcast Driver',
                     'broadcasting_placeholder' => 'Broadcast Driver',
@@ -153,25 +150,33 @@ return [
                     'pusher_app_secret_palceholder' => 'Pusher App Secret',
                 ],
                 'buttons' => [
-                    'setup_database' => 'Configuration de la base de donnée',
-                    'setup_application' => 'Configuration de l\'application',
-                    'install' => 'Installer',
+                    'setup_database' => 'Setup Database',
+                    'setup_application' => 'Setup Application',
+                    'install' => 'Install',
                 ],
             ],
         ],
         'classic' => [
-            'templateTitle' => 'Étape 3 | Paramètres d\'environnement | Editeur Classique',
-            'title' => 'Éditeur de texte classique',
-            'save' => 'Enregistrer .env',
-            'back' => 'Utiliser le formulaire',
-            'install' => 'Enregistrer et installer',
+            'templateTitle' => 'Step 3 | Environment Settings | Classic Editor',
+            'title' => 'Classic Environment Editor',
+            'save' => 'Save .env',
+            'back' => 'Use Form Wizard',
+            'install' => 'Save and Install',
         ],
-        'success' => 'Vos paramètres de fichier .env ont été enregistrés.',
-        'errors' => 'Impossible de sauvegarder le fichier .env, veuillez le créer manuellement.',
+        'success' => 'Your .env file settings have been saved.',
+        'errors' => 'Unable to save the .env file, Please create it manually.',
     ],
 
-    'install' => 'Installer',
+    'install' => 'Install',
 
+    /**
+     *
+     * Installed Log translations.
+     *
+     */
+    'installed' => [
+        'success_log_message' => 'Installer successfully INSTALLED on ',
+    ],
 
     /**
      *
@@ -179,14 +184,14 @@ return [
      *
      */
     'final' => [
-        'title' => 'Terminé',
-        'templateTitle' => 'Installation Terminé',
-        'finished' => 'L’application a été installée avec succès.',
+        'title' => 'Installation Finished',
+        'templateTitle' => 'Installation Finished',
+        'finished' => 'Application has been successfully installed.',
         'migration' => 'Migration &amp; Seed Console Output:',
         'console' => 'Application Console Output:',
         'log' => 'Installation Log Entry:',
         'env' => 'Final .env File:',
-        'exit' => 'Cliquez ici pour quitter',
+        'exit' => 'Click here to exit',
     ],
 
     /**
@@ -200,7 +205,7 @@ return [
          * Shared translations.
          *
          */
-        'title' => 'Mise à jour de Laravel',
+        'title' => 'Updater',
 
         /**
          *
@@ -208,8 +213,8 @@ return [
          *
          */
         'welcome' => [
-            'title'   => 'Bienvenue dans l\'updateur...',
-            'message' => 'Bienvenue dans le programme de mise à jour.',
+            'title'   => 'Welcome To The Updater',
+            'message' => 'Welcome to the update wizard.',
         ],
 
         /**
@@ -218,9 +223,9 @@ return [
          *
          */
         'overview' => [
-            'title'   => 'Aperçu',
-            'message' => 'Il y a 1 mise à jour.|Il y a :number mises à jour.',
-            'install_updates' => "Installer la mise à jour"
+            'title'   => 'Overview',
+            'message' => 'There is 1 update.|There are :number updates.',
+            'install_updates' => "Install Updates"
         ],
 
         /**
@@ -229,13 +234,13 @@ return [
          *
          */
         'final' => [
-            'title' => 'Terminé',
-            'finished' => 'L’application a été mise à jour avec succès.',
-            'exit' => 'Cliquez ici pour quitter',
+            'title' => 'Finished',
+            'finished' => 'Application\'s database has been successfully updated.',
+            'exit' => 'Click here to exit',
         ],
 
         'log' => [
-            'success_message' => 'L\'installateur Laravel a été mis à jour avec succès le ',
+            'success_message' => 'Installer successfully UPDATED on ',
         ],
     ],
 ];

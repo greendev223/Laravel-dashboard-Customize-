@@ -2,640 +2,926 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Brand;
-use App\Models\Category;
+use App\Models\Plan;
 use App\Models\Product;
-use App\Models\Tax;
-use App\Models\Unit;
+use App\Models\Product_images;
+use App\Models\ProductCategorie;
+use App\Models\ProductVariantOption;
+use App\Models\ProductTax;
+use App\Models\Ratting;
+use App\Models\Store;
+use App\Exports\ProductExport;
+use App\Imports\ProductImport;
+use App\Models\User;
+use App\Models\UserStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Exports\ProductExport;
 
 class ProductController extends Controller
 {
+    public function __construct()
+    {
+        if(Auth::check())
+        {
+            $userlang=\Auth::user()->lang;
+            \App::setLocale($userlang);
+        }
+    }
+
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function index()
     {
-        if (Auth::user()->can('Manage Product')) {
-            $products = Product::getallproducts()->get();
-            $barcode  = [
-                'barcodeType' => Auth::user()->barcodeType() == '' ? 'code128' : Auth::user()->barcodeType(),
-                'barcodeFormat' => Auth::user()->barcodeFormat() == '' ? 'css' : Auth::user()->barcodeFormat(),
-            ];
+        $user             = \Auth::user();
+        $store_id         = Store::where('id', $user->current_store)->first();
+        $products         = Product::where('store_id', $store_id->id)->orderBy('id', 'DESC')->get();
+        $productcategorie = ProductCategorie::where('store_id', $store_id->id)->where('created_by', \Auth::user()->creatorId())->get()->pluck('name', 'id');
 
-            return view('products.index', compact('products', 'barcode'));
-        } else {
-            return redirect()->back()->with('error', __('Permission denied.'));
-        }
+        return view('product.index', compact('products', 'productcategorie'));
     }
 
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function create()
     {
-        $user_id = Auth::user()->getCreatedBy();
-        if (Auth::user()->can('Create Product')) {
-            $categories = Category::where('created_by', $user_id)->pluck('name', 'id');
-            $categories->prepend(__('Select Category'), '');
+        $user              = \Auth::user();
+        $store_id          = Store::where('id', $user->current_store)->first();
+        $product_categorie = ProductCategorie::where('store_id', $store_id->id)->where('created_by', \Auth::user()->creatorId())->get()->pluck('name', 'id');
+        $product_tax       = ProductTax::where('store_id', $store_id->id)->where('created_by', \Auth::user()->creatorId())->get()->pluck('name', 'id');
 
-            $brands = Brand::where('created_by', $user_id)->pluck('name', 'id');
-            $brands->prepend(__('Select Brand'), '');
 
-            $units = Unit::where('created_by', $user_id)->pluck('name', 'id');
-            $units->prepend(__('Select Unit'), '');
-
-            $taxes = Tax::where('created_by', $user_id)->pluck('name', 'id');
-            $taxes->prepend(__('Apply Tax'), '');
-
-            return view('products.create', compact('categories', 'brands', 'units', 'taxes'));
-        } else {
-            return redirect()->back()->with('error', __('Permission denied.'));
-        }
+        return view('product.create', compact('product_categorie', 'product_tax'));
     }
 
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param \Illuminate\Http\Request $request
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function store(Request $request)
     {
-        if (Auth::user()->can('Create Product')) {
-            $validator = Validator::make(
-                $request->all(),
-                [
-                    'name' => 'required|max:100|unique:products,name,NULL,id,created_by,' . Auth::user()->getCreatedBy(),
-                    'sku' => 'nullable|regex:/[\-]+/i',
-                ]
+        $user     = \Auth::user();
+        $store_id = Store::where('id', $user->current_store)->first();
+
+        $validator = \Validator::make(
+            $request->all(), [
+                               'name' => 'required|max:120',
+                           ]
+        );
+        if($request->enable_product_variant == '')
+        {
+            $validator = \Validator::make(
+                $request->all(), [
+                                   'price' => 'required',
+                                   'quantity' => 'required',
+                                   'is_cover_image' => 'mimes:jpeg,png,jpg,gif,svg,pdf,doc|max:20480',
+                                   'downloadable_prodcut' => 'mimes:jpeg,png,jpg,gif,svg,pdf,doc|max:20480',
+                               ]
             );
+        }
+        if($request->enable_product_variant == 'on')
+        {
+            if(!empty($request->verians))
+            {
+                foreach($request->verians as $k => $items)
+                {
+                    foreach($items as $item_k => $item)
+                    {
+                        if(empty($item) && $item < 0)
+                        {
+                            $msg['flag'] = 'error';
+                            $msg['msg']  = __('Please Fill The Form');
 
-            if ($validator->fails()) {
-                return redirect()->back()->with('error', $validator->errors()->first());
-            }
-
-            $product                 = new Product();
-            $product->name           = $request->name;
-            $product->purchase_price = (float)$request->purchase_price;
-            $product->sale_price     = (float)$request->sale_price;
-            $product->sku            = $request->sku;
-            $product->description    = $request->description;
-
-            if (!empty($request->input('category_id'))) {
-                $product->category_id = $request->category_id;
-            }
-            if (!empty($request->input('brand_id'))) {
-                $product->brand_id = $request->brand_id;
-            }
-            if (!empty($request->input('tax_id'))) {
-                $product->tax_id = $request->tax_id;
-            }
-            if (!empty($request->input('unit_id'))) {
-                $product->unit_id = $request->unit_id;
-            }
-            $product->product_type = 0;
-            $product->slug         = Str::slug($request->name, '-');
-            $product->created_by   = Auth::user()->getCreatedBy();
-
-            if ($request->hasFile('image')) {
-                $validator = Validator::make(
-                    $request->all(),
-                    [
-                        'image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:20480',
-                    ]
-                );
-
-                if ($validator->fails()) {
-                    return redirect()->back()->with('error', $validator->errors()->first());
+                            return $msg;
+                        }
+                    }
                 }
-
-                $filenameWithExt = $request->file('image')->getClientOriginalName();
-                $filename        = pathinfo($filenameWithExt, PATHINFO_FILENAME);
-                $extension       = $request->file('image')->getClientOriginalExtension();
-                $fileNameToStore = $filename . '_' . time() . '.' . $extension;
-                $filepath        = $request->file('image')->storeAs('productimages', $fileNameToStore);
-                $product->image  = $filepath;
             }
+            else
+            {
+                $msg['flag'] = 'error';
+                $msg['msg']  = __('Please Add Variants');
+
+                return $msg;
+            }
+        }
+        if($validator->fails())
+        {
+            $messages = $validator->getMessageBag();
+
+            $msg['flag'] = 'error';
+            $msg['msg']  = $messages->first();
+
+            return $msg;
+        }
+
+        $file_name = [];
+        if(!empty($request->multiple_files) && count($request->multiple_files) > 0)
+        {
+            foreach($request->multiple_files as $file)
+            {
+                $filenameWithExt = $file->getClientOriginalName();
+                $filename        = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+                $extension       = $file->getClientOriginalExtension();
+                $fileNameToStore = $filename . '_' . time() . '.' . $extension;
+                $file_name[]     = $fileNameToStore;
+                $dir             = storage_path('uploads/product_image/');
+                if(!file_exists($dir))
+                {
+                    mkdir($dir, 0777, true);
+                }
+                $path = $file->storeAs('uploads/product_image/', $fileNameToStore);
+            }
+
+        }
+
+        if(!empty($request->is_cover_image))
+        {
+            $filenameWithExt  = $request->file('is_cover_image')->getClientOriginalName();
+            $filename         = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+            $extension        = $request->file('is_cover_image')->getClientOriginalExtension();
+            $fileNameToStores = $filename . '_' . time() . '.' . $extension;
+            $dir              = storage_path('uploads/is_cover_image/');
+            if(!file_exists($dir))
+            {
+                mkdir($dir, 0777, true);
+            }
+            $path = $request->file('is_cover_image')->storeAs('uploads/is_cover_image/', $fileNameToStores);
+        }
+
+        if(!empty($request->attachment))
+        {
+            $filenameWithExt = $request->file('attachment')->getClientOriginalName();
+            $filename        = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+            $extension       = $request->file('attachment')->getClientOriginalExtension();
+            $fileAttachment  = $filename . '_' . time() . '.' . $extension;
+            $dir             = storage_path('uploads/is_cover_image/');
+            if(!file_exists($dir))
+            {
+                mkdir($dir, 0777, true);
+            }
+            $path = $request->file('attachment')->storeAs('uploads/is_cover_image/', $fileAttachment);
+        }
+        if(!empty($request->downloadable_prodcut))
+        {
+            $filenameWithExt   = $request->file('downloadable_prodcut')->getClientOriginalName();
+            $filename          = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+            $extension         = $request->file('downloadable_prodcut')->getClientOriginalExtension();
+            $filedownloadable1 = $filename . '_' . time() . '.' . $extension;
+            $dir               = storage_path('uploads/downloadable_prodcut/');
+            if(!file_exists($dir))
+            {
+                mkdir($dir, 0777, true);
+            }
+            $filedownloadable = str_replace(' ', '_', $filedownloadable1);
+
+            $path = $request->file('downloadable_prodcut')->storeAs('uploads/downloadable_prodcut/', $filedownloadable);
+        }
+
+        if(!empty($request->product_tax))
+        {
+            if(count($request->product_tax) > 1 && in_array(0, $request->product_tax))
+            {
+                $msg['flag'] = 'error';
+                $msg['msg']  = __('Please select valid tax');
+
+                return $msg;
+            }
+        }
+        if(!empty($request->product_categorie))
+        {
+            if(count($request->product_categorie) > 1 && in_array(0, $request->product_categorie))
+            {
+                $msg['flag'] = 'error';
+                $msg['msg']  = __('Please select valid Categorie');
+
+                return $msg;
+            }
+        }
+
+        $user          = \Auth::user();
+        $creator       = User::find($user->creatorId());
+        $total_product = $user->countProducts();
+        $plan          = Plan::find($creator->plan);
+
+
+        if($total_product < $plan->max_products || $plan->max_products == -1)
+        {
+            $product             = new Product();
+            $product['store_id'] = $store_id->id;
+            $product['name']     = $request->name;
+            if(!empty($request->product_categorie))
+            {
+                $product['product_categorie'] = implode(',', $request->product_categorie);
+            }
+            else
+            {
+                $product['product_categorie'] = $request->product_categorie;
+            }
+            if(!empty($request->price))
+            {
+                $product['price']      = !empty($request->price) ? $request->price : '0';
+                $product['last_price'] = !empty($request->last_price) ? $request->last_price : '0';
+            }
+            if(!empty($request->quantity))
+            {
+                $product['quantity'] = !empty($request->quantity) ? $request->quantity : '0';
+            }
+            $product['SKU'] = $request->SKU;
+            if(!empty($request->product_tax))
+            {
+                $product['product_tax'] = implode(',', $request->product_tax);
+            }
+            else
+            {
+                $product['product_tax'] = $request->product_tax;
+            }
+
+            $product['custom_field_1'] = $request->custom_field_1;
+            $product['custom_value_1'] = $request->custom_value_1;
+            $product['custom_field_2'] = $request->custom_field_2;
+            $product['custom_value_2'] = $request->custom_value_2;
+            $product['custom_field_3'] = $request->custom_field_3;
+            $product['custom_value_3'] = $request->custom_value_3;
+            $product['custom_field_4'] = $request->custom_field_4;
+            $product['custom_value_4'] = $request->custom_value_4;
+
+            $product['product_display']        = isset($request->product_display) ? 'on' : 'off';
+            $product['enable_product_variant'] = isset($request->enable_product_variant) ? 'on' : 'off';
+            $product['variants_json']          = $request->hiddenVariantOptions;
+            $product['is_cover']               = !empty($request->is_cover_image) ? $fileNameToStores : '';
+            $product['attachment']             = !empty($request->attachment) ? $fileAttachment : '';
+            $product['downloadable_prodcut']   = !empty($request->downloadable_prodcut) ? $filedownloadable : '';
+            $product['description']            = $request->description;
+            $product['specification']          = $request->specification;
+            $product['detail']                 = $request->detail;
+            $product['created_by']             = \Auth::user()->creatorId();
 
             $product->save();
 
-            return redirect()->route('products.index')->with('success', __('Product added successfully.'));
-        } else {
-            return redirect()->back()->with('error', __('Permission denied.'));
+            if(!empty($file_name))
+            {
+                foreach($file_name as $file)
+                {
+                    $objStore = Product_images::create(
+                        [
+                            'product_id' => $product->id,
+                            'product_images' => $file,
+                        ]
+                    );
+                }
+            }
+            if($request->enable_product_variant == 'on')
+            {
+                $product->variants_json = json_decode($product->variants_json, true);
+
+                $variant_options = array_column($product->variants_json, 'variant_options');
+
+                $possibilities = Product::possibleVariants($variant_options);
+
+                foreach($possibilities as $key => $possibility)
+                {
+                    $VariantOption             = new ProductVariantOption();
+                    $VariantOption->name       = $possibility;
+                    $VariantOption->product_id = $product->id;
+                    $VariantOption->price      = $request->verians[$key]['price'];
+                    $VariantOption->quantity   = $request->verians[$key]['qty'];
+                    $VariantOption->created_by = Auth::user()->creatorId();
+                    $VariantOption->save();
+                }
+            }
+            if(!empty($product))
+            {
+                $msg['flag'] = 'success';
+                $msg['msg']  = __('Product Successfully Created');
+            }
+            else
+            {
+                $msg['flag'] = 'error';
+                $msg['msg']  = __('Product Created Failed');
+            }
+
+            return $msg;
+        }
+        else
+        {
+            $msg['flag'] = 'error';
+            $msg['msg']  = __('Your product limit is over Please upgrade plan');
+
+            return $msg;
         }
     }
 
+    /**
+     * Display the specified resource.
+     *
+     * @param \App\Product $product
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function show(Product $product)
     {
-        return redirect()->back()->with('error', __('Permission denied.'));
+        $user  = \Auth::user();
+        $store = Store::where('id', $user->current_store)->first();
+
+        $product_image = Product_images::where('product_id', $product->id)->get();
+
+        $product_tax     = ProductTax::where('store_id', $store->id)->where('created_by', \Auth::user()->creatorId())->get()->pluck('name', 'id');
+        $product_ratings = Ratting::where('product_id', $product->id)->get();
+
+        $ratting    = Ratting::where('product_id', $product->id)->where('rating_view', 'on')->sum('ratting');
+        $user_count = Ratting::where('product_id', $product->id)->where('rating_view', 'on')->count();
+        if($user_count > 0)
+        {
+            $avg_rating = number_format($ratting / $user_count, 1);
+        }
+        else
+        {
+            $avg_rating = number_format($ratting / 1, 1);
+
+        }
+
+        $variant_name          = json_decode($product->variants_json);
+        $product_variant_names = $variant_name;
+
+        return view('product.view', compact('product', 'product_image', 'product_tax', 'product_ratings', 'store', 'avg_rating', 'user_count', 'product_variant_names'));
     }
 
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param \App\Product $product
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function edit(Product $product)
     {
-        $user_id = Auth::user()->getCreatedBy();
-        if (Auth::user()->can('Edit Product')) {
-            $categories = Category::where('created_by', $user_id)->pluck('name', 'id');
-            $categories->prepend(__('Select Category'), '');
+        $user              = \Auth::user();
+        $store_id          = Store::where('id', $user->current_store)->first();
+        $product_categorie = ProductCategorie::where('store_id', $store_id->id)->where('created_by', \Auth::user()->creatorId())->get()->pluck('name', 'id');
+        $product_image     = Product_images::where('product_id', $product->id)->get();
+        $product_tax       = ProductTax::where('store_id', $store_id->id)->where('created_by', \Auth::user()->creatorId())->get()->pluck('name', 'id');
 
-            $brands = Brand::where('created_by', $user_id)->pluck('name', 'id');
-            $brands->prepend(__('Select Brand'), '');
+        $productVariantArrays  = [];
+        $product_variant_names = [];
+        $variant_options       = [];
+        if($product->enable_product_variant == 'on')
+        {
+            $productVariants = ProductVariantOption::where('product_id', $product->id)->get();
 
-            $units = Unit::where('created_by', $user_id)->pluck('name', 'id');
-            $units->prepend(__('Select Unit'), '');
+            if(!empty(json_decode($product->variants_json)))
+            {
+                $variant_options       = array_column(json_decode($product->variants_json), 'variant_name');
+                $product_variant_names = $variant_options;
+            }
 
-            $taxes = Tax::where('created_by', $user_id)->pluck('name', 'id');
-            $taxes->prepend(__('Apply Tax'), '');
-
-            return view('products.edit', compact('product', 'categories', 'brands', 'units', 'taxes'));
-        } else {
-            return redirect()->back()->with('error', __('Permission denied.'));
+            foreach($productVariants as $key => $productVariant)
+            {
+                $productVariantArrays[$key]['product_variants'] = $productVariant->toArray();
+            }
         }
+
+        return view('product.edit', compact('product', 'product_categorie', 'product_image', 'product_tax', 'productVariantArrays', 'product_variant_names', 'variant_options'));
     }
 
-    public function update(Request $request, Product $product)
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param \Illuminate\Http\Request $request
+     * @param \App\Product $product
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function update(Request $request, $product)
     {
-        if (Auth::user()->can('Edit Product')) {
-            $validator = Validator::make(
-                $request->all(),
+        //
+    }
+
+    public function productUpdate(Request $request, $product_id)
+    {
+        $product = Product::find($product_id);
+
+        $user     = \Auth::user();
+        $store_id = Store::where('id', $user->current_store)->first();
+
+        $validator = \Validator::make(
+            $request->all(), [
+                               'name' => 'required|max:120',
+                           ]
+        );
+        if($request->enable_product_variant == '')
+        {
+            $validator = \Validator::make(
+                $request->all(), [
+                                   'price' => 'required',
+                                   'quantity' => 'required',
+                                   'is_cover_image' => 'mimes:jpeg,png,jpg,gif,svg,pdf,doc|max:20480',
+                                   'downloadable_prodcut' => 'mimes:jpeg,png,jpg,gif,svg,pdf,doc|max:20480',
+                               ]
+            );
+        }
+        if($request->enable_product_variant == 'on')
+        {
+            if(!empty($request->variants))
+            {
+                foreach($request->variants as $k => $items)
+                {
+                    foreach($items as $item_k => $item)
+                    {
+                        if(empty($item))
+                        {
+                            $msg['flag'] = 'error';
+                            $msg['msg']  = __('Please Fill The Form');
+
+                            return $msg;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                $msg['flag'] = 'error';
+                $msg['msg']  = __('Please Add Variants');
+
+                return $msg;
+            }
+        }
+        if($validator->fails())
+        {
+            $messages = $validator->getMessageBag();
+
+            $msg['flag'] = 'error';
+            $msg['msg']  = $messages->first();
+
+            return $msg;
+        }
+
+        $file_name = [];
+
+        if(!empty($request->multiple_files) && count($request->multiple_files) > 0)
+        {
+            foreach($request->multiple_files as $file)
+            {
+
+                $filenameWithExt = $file->getClientOriginalName();
+                $filename        = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+                $extension       = $file->getClientOriginalExtension();
+                $fileNameToStore = $filename . '_' . time() . '.' . $extension;
+                $file_name[]     = $fileNameToStore;
+                $dir             = storage_path('uploads/product_image/');
+                if(!file_exists($dir))
+                {
+                    mkdir($dir, 0777, true);
+                }
+                $path = $file->storeAs('uploads/product_image/', $fileNameToStore);
+            }
+
+        }
+
+        if(!empty($request->attachment))
+        {
+            if(asset(Storage::exists('uploads/is_cover_image/' . $product->attachment)))
+            {
+                asset(Storage::delete('uploads/is_cover_image/' . $product->attachment));
+            }
+
+            $filenameWithExt = $request->file('attachment')->getClientOriginalName();
+            $filename        = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+            $extension       = $request->file('attachment')->getClientOriginalExtension();
+            $fileAttachment  = $filename . '_' . time() . '.' . $extension;
+            $dir             = storage_path('uploads/is_cover_image/');
+            if(!file_exists($dir))
+            {
+                mkdir($dir, 0777, true);
+            }
+            $path = $request->file('attachment')->storeAs('uploads/is_cover_image/', $fileAttachment);
+        }
+
+        if(!empty($request->downloadable_prodcut))
+        {
+            if(asset(Storage::exists('uploads/is_cover_image/' . $product->downloadable_prodcut)))
+            {
+                asset(Storage::delete('uploads/is_cover_image/' . $product->downloadable_prodcut));
+            }
+
+            $filenameWithExt   = $request->file('downloadable_prodcut')->getClientOriginalName();
+            $filename          = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+            $extension         = $request->file('downloadable_prodcut')->getClientOriginalExtension();
+            $filedownloadable1 = $filename . '_' . time() . '.' . $extension;
+            $dir               = storage_path('uploads/downloadable_prodcut/');
+            if(!file_exists($dir))
+            {
+                mkdir($dir, 0777, true);
+            }
+            $filedownloadable = str_replace(' ', '_', $filedownloadable1);
+
+            $path = $request->file('downloadable_prodcut')->storeAs('uploads/downloadable_prodcut/', $filedownloadable);
+        }
+
+        if(!empty($request->is_cover_image))
+        {
+            if(asset(Storage::exists('uploads/is_cover_image/' . $product->is_cover)))
+            {
+                asset(Storage::delete('uploads/is_cover_image/' . $product->is_cover));
+            }
+
+            $filenameWithExt  = $request->file('is_cover_image')->getClientOriginalName();
+            $filename         = pathinfo($filenameWithExt, PATHINFO_FILENAME);
+            $extension        = $request->file('is_cover_image')->getClientOriginalExtension();
+            $fileNameToStores = $filename . '_' . time() . '.' . $extension;
+            $dir              = storage_path('uploads/is_cover_image/');
+            if(!file_exists($dir))
+            {
+                mkdir($dir, 0777, true);
+            }
+            $path = $request->file('is_cover_image')->storeAs('uploads/is_cover_image/', $fileNameToStores);
+        }
+
+        if(!empty($request->product_tax))
+        {
+            if(count($request->product_tax) > 1 && in_array(0, $request->product_tax))
+            {
+                return redirect()->back()->with('error', __('Please select valid tax'));
+            }
+        }
+
+        if(!empty($request->product_categorie))
+        {
+            if(count($request->product_categorie) > 1 && in_array(0, $request->product_categorie))
+            {
+                return redirect()->back()->with('error', __('Please select valid Categorie'));
+            }
+        }
+
+        $product['store_id'] = $store_id->id;
+        $product['name']     = $request->name;
+        if(!empty($request->product_categorie))
+        {
+            $product['product_categorie'] = implode(',', $request->product_categorie);
+        }
+        else
+        {
+            $product['product_categorie'] = $request->product_categorie;
+        }
+        if(!empty($request->price))
+        {
+            $product['price']      = !empty($request->price) ? $request->price : '0';
+            $product['last_price'] = !empty($request->last_price) ? $request->last_price : '0';
+        }
+        if(!empty($request->quantity))
+        {
+            $product['quantity'] = !empty($request->quantity) ? $request->quantity : '0';
+        }
+        $product['SKU'] = $request->SKU;
+        if(!empty($request->product_tax))
+        {
+            $product['product_tax'] = implode(',', $request->product_tax);
+        }
+        else
+        {
+            $product['product_tax'] = $request->product_tax;
+        }
+
+        $product['custom_field_1'] = $request->custom_field_1;
+        $product['custom_value_1'] = $request->custom_value_1;
+        $product['custom_field_2'] = $request->custom_field_2;
+        $product['custom_value_2'] = $request->custom_value_2;
+        $product['custom_field_3'] = $request->custom_field_3;
+        $product['custom_value_3'] = $request->custom_value_3;
+        $product['custom_field_4'] = $request->custom_field_4;
+        $product['custom_value_4'] = $request->custom_value_4;
+
+        $product['attachment']             = !empty($request->attachment) ? $fileAttachment : '';
+        $product['downloadable_prodcut']   = !empty($request->downloadable_prodcut) ? $filedownloadable : '';
+        $product['product_display']        = isset($request->product_display) ? 'on' : 'off';
+        $product['enable_product_variant'] = isset($request->enable_product_variant) ? 'on' : 'off';
+        if(!empty($request->is_cover_image))
+        {
+            $product['is_cover'] = $fileNameToStores;
+        }
+        $product['description']   = $request->description;
+        $product['specification'] = $request->specification;
+        $product['detail']        = $request->detail;
+        $product['created_by']    = \Auth::user()->creatorId();
+        foreach($file_name as $file)
+        {
+            $objStore = Product_images::create(
                 [
-                    'name' => 'required|max:100|unique:products,name,' . $product->id . ',id,created_by,' . Auth::user()->getCreatedBy(),
-                    'sku' => 'nullable|regex:/[\-]+/i',
+                    'product_id' => $product->id,
+                    'product_images' => $file,
+
                 ]
             );
-
-            if ($validator->fails()) {
-                return redirect()->back()->with('error', $validator->errors()->first());
-            }
-
-            $product->name           = $request->name;
-            $product->purchase_price = $request->purchase_price;
-            $product->sale_price     = $request->sale_price;
-            $product->sku            = $request->sku;
-            $product->description    = $request->description;
-            if (!empty($request->input('category_id'))) {
-                $product->category_id = $request->category_id;
-            }
-            if (!empty($request->input('brand_id'))) {
-                $product->brand_id = $request->brand_id;
-            }
-            if (!empty($request->input('tax_id'))) {
-                $product->tax_id = $request->tax_id;
-            }
-            if (!empty($request->input('unit_id'))) {
-                $product->unit_id = $request->unit_id;
-            }
-            $product->slug = Str::slug($request->name, '-');
-
-            $oldfilepath = $product->image;
-
-            if ($request->imgstatus == 1) {
-                if (asset(Storage::exists($oldfilepath))) {
-                    $product->image = '';
-                    asset(Storage::delete($oldfilepath));
-                }
-            }
-            if ($request->hasFile('image')) {
-                $validator = Validator::make(
-                    $request->all(),
-                    [
-                        'image' => 'image|mimes:jpeg,png,jpg,gif,svg|max:20480',
-                    ]
-                );
-
-                if ($validator->fails()) {
-                    return redirect()->back()->with('error', $validator->errors()->first());
-                }
-
-                if (asset(Storage::exists($oldfilepath))) {
-                    asset(Storage::delete($oldfilepath));
-                }
-
-                $filenameWithExt = $request->file('image')->getClientOriginalName();
-                $filename        = pathinfo($filenameWithExt, PATHINFO_FILENAME);
-                $extension       = $request->file('image')->getClientOriginalExtension();
-                $fileNameToStore = $filename . '_' . time() . '.' . $extension;
-                $filepath        = $request->file('image')->storeAs('productimages', $fileNameToStore);
-                $product->image  = $filepath;
-            }
-
-            $product->save();
-
-            return redirect()->route('products.index')->with('success', __('Product updated successfully.'));
-        } else {
-            return redirect()->back()->with('error', __('Permission denied.'));
         }
+        $product->save();
+        if($product->enable_product_variant == 'on')
+        {
+            foreach($request->variants as $key => $variant)
+            {
+                $newVal = '';
+                foreach(array_values($variant['variants']) as $k => $v)
+                {
+                    if(!empty($newVal))
+                    {
+                        $newVal .= ' : ' . $v[0];
+                    }
+                    else
+                    {
+                        $newVal .= $v[0];
+                    }
+                }
+
+                $VariantOption = ProductVariantOption::find($key);
+                $VariantOption->name     = $newVal;
+                $VariantOption->price    = $variant['price'];
+                $VariantOption->quantity = $variant['quantity'];
+                $VariantOption->save();
+            }
+        }
+
+        if(!empty($product))
+        {
+            $msg['flag'] = 'success';
+            $msg['msg']  = __('Product Successfully Created');
+        }
+        else
+        {
+            $msg['flag'] = 'error';
+            $msg['msg']  = __('Product Created Failed');
+        }
+
+        return $msg;
     }
 
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param \App\Product $product
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function destroy(Product $product)
     {
-        if (Auth::user()->can('Delete Product')) {
-            if (asset(Storage::exists($product->image))) {
-                asset(Storage::delete($product->image));
-            }
-            $product->delete();
+        Ratting::where('product_id', $product->id)->delete();
 
-            return redirect()->route('products.index')->with('success', __('Product deleted successfully.'));
-        } else {
-            return redirect()->back()->with('error', __('Permission denied.'));
+        $Product_images = Product_images::where('product_id', $product->id)->get();
+        $pro_img        = new ProductController();
+        foreach($Product_images as $pro)
+        {
+            $pro_img->fileDelete($pro->id);
         }
+        $dir = storage_path('uploads/is_cover_image/');
+        if(!empty($product->is_cover))
+        {
+            unlink($dir . $product->is_cover);
+        }
+        ProductVariantOption::where('product_id', $product->id)->delete();
+        $product->delete();
+
+        return redirect()->back()->with('success', __('Product successfully deleted.'));
     }
 
-    public function searchProductsByName(Request $request)
+    public function grid()
     {
-        $search = $request->search;
+        $user     = \Auth::user();
+        $store_id = Store::where('id', $user->current_store)->first();
+        $products = Product::where('store_id', $store_id->id)->orderBy('id', 'DESC')->get();
 
-        if (Auth::user()->can('Manage Product') && $request->ajax() && $search != '') {
-            $products = Product::getallproducts()->where('products.name', 'LIKE', "%{$search}%")->get();
-
-            $items = [];
-            foreach ($products as $key => $item) {
-                $price = $item->sale_price != 0 ? $item->sale_price : 0;
-
-                $tax = Product::where('products.id', $item->id)->leftJoin(
-                    'taxes',
-                    function ($join) {
-                        $join->on('taxes.id', '=', 'products.tax_id')->where('taxes.created_by', '=', Auth::user()->getCreatedBy())->orWhereNull('products.tax_id');
-                    }
-                )->select(DB::Raw('IFNULL( `taxes`.`percentage` , 0 ) as percentage'))->first();
-
-                $items[$key]['id']          = $item->id;
-                $items[$key]['name']        = $item->name;
-                $items[$key]['quantity']    = '1';
-                $items[$key]['maxquantity'] = $item->getTotalProductQuantity() > 0 ? $item->getTotalProductQuantity() : '';
-                $items[$key]['price']       = $price;
-                $items[$key]['subtotal']    = $price + ($price * $tax->percentage) / 100;
-                $items[$key]['tax']         = $tax->percentage;
-            }
-
-            return json_encode($items);
-        }
+        return view('product.grid', compact('products'));
     }
 
-    public function searchProducts(Request $request)
+    public function fileDelete($id)
     {
-        $lastsegment = $request->session_key;
+        $product_img_id = Product_images::find($id);
 
-        if (Auth::user()->can('Manage Product') && $request->ajax() && isset($lastsegment) && !empty($lastsegment)) {
-            $output = "";
-            if ($request->cat_id !== '' && $request->search == '') {
-                $products = Product::getallproducts()->where('category_id', $request->cat_id)->get();
-            } else {
-                $products = Product::getallproducts()->where('products.name', 'LIKE', "%{$request->search}%")->orWhere('category_id', $request->cat_id)->get();
-            }
-            if ($products) {
-                foreach ($products as $key => $product) {
-                    $image_url = (!empty($product->image) && Storage::exists($product->image)) ? $product->image : 'logo/placeholder.png';
-                    if ($request->session_key == 'purchases') {
-                        $productprice = $product->purchase_price != 0 ? $product->purchase_price : 0;
-                    } else if ($request->session_key == 'sales') {
-                        $productprice = $product->sale_price != 0 ? $product->sale_price : 0;
-                    } else {
-                        $productprice = $product->sale_price != 0 ? $product->sale_price : $product->purchase_price;
-                    }
-
-                    $output .= '
-                           
-                              <div class="col-lg-3 col-md-3">
-                            <div class="tab-pane fade show active  toacart" data-url="' . url('add-to-cart/' . $product->id . '/' . $lastsegment) . '">
-                            <div class="card rounded-10 card-profile hover-shadow-lg mx-2">
-
-                              <div class="mx-auto">
-                                <img alt="Image placeholder" src="' . asset(Storage::url($image_url)) . '" class="card-image avatar rounded-circle shadow hover-shadow-lg" style=" height: 7rem; width: 7rem;   margin-top: 0.7rem;">
-                              </div>
-                              <div class="card-body  mt-0 p-3 pt-0 text-center">
-                                <h5 class="mb-0 h6">' . $product->name . '</h5>
-                                <small class="mb-0">' . Auth::user()->priceFormat($productprice) . '</small>
-                              </div>
-                            </div>
-                            </div>
-                              </div>
-                           
-                    ';
-                }
-
-                return Response($output);
-            } else {
-                return Response(__('No result found'));
-            }
-        }
-    }
-
-    public function addToCart(Request $request, $id, $session_key)
-    {
-        if (Auth::user()->can('Manage Product') && $request->ajax()) {
-            $product = Product::find($id);
-
-            $productquantity = 0;
-
-            if ($product) {
-                $productquantity = $product->getTotalProductQuantity();
-            }
-
-            if (!$product || ($session_key == 'sales' && $productquantity == 0)) {
-                return response()->json(
-                    [
-                        'code' => 404,
-                        'status' => 'Error',
-                        'error' => __('This product is out of stock!'),
-                    ],
-                    404
-                );
-            }
-
-            $productname = $product->name;
-            if ($session_key == 'purchases') {
-
-                $productprice = $product->purchase_price != 0 ? $product->purchase_price : 0;
-            } else if ($session_key == 'sales') {
-
-                $productprice = $product->sale_price != 0 ? $product->sale_price : 0;
-            } else {
-
-                $productprice = $product->sale_price != 0 ? $product->sale_price : $product->purchase_price;
-            }
-
-            $originalquantity = (int)$productquantity;
-
-            $tax = Product::where('products.id', $id)->leftJoin(
-                'taxes',
-                function ($join) {
-                    $join->on('taxes.id', '=', 'products.tax_id')->where('taxes.created_by', '=', Auth::user()->getCreatedBy())->orWhereNull('products.tax_id');
-                }
-            )->select(DB::Raw('IFNULL( `taxes`.`percentage` , 0 ) as percentage'))->first();
-
-            $producttax = $tax->percentage;
-
-            $tax = ($productprice * $producttax) / 100;
-
-            $subtotal        = $productprice + $tax;
-            $cart            = session()->get($session_key);
-            $image_url       = (!empty($product->image) && Storage::exists($product->image)) ? $product->image : 'logo/placeholder.png';
-            $model_delete_id = 'delete-form-' . $id;
-
-            $carthtml = '';
-
-            $carthtml .= '<div class="row mt-3" data-product-id="' . $id . '" id="product-id-' . $id . '">
-                            <div class="col-sm-2">
-                                <img alt="Image placeholder" src="' . asset(Storage::url($image_url)) . '" class="card-image avatar rounded-circle shadow hover-shadow-lg">
-                            </div>
-                            <div class="col-sm-10">
-                                <div class="row">
-                                    <div class="col-sm-7">
-                                      <span class="name">' . $productname . '</span>
-                                    </div>
-                                    <div class="col-sm-5">
-                                      <span class="price">' . Auth::user()->priceFormat($productprice) . '</span>
-                                    </div>
-                                    <div class="col-sm-5 mt-2">
-                                        <span class="quantity buttons_added">
-                                            <input type="button" value="-" class="minus">
-                                            <input type="number" step="1" min="1" max="" name="quantity" title="' . __('Quantity') . '" class="input-number" size="4" data-url="' . url('update-cart/') . '" data-id="' . $id . '">
-                                            <input type="button" value="+" class="plus">
-                                        </span>
-                                    </div>
-                                    <div class="col-sm-2 mt-2">
-                                      <span class="tax">' . $producttax . '%</span>
-                                    </div>
-                                    <div class="col-sm-3 mt-2">
-                                      <span class="subtotal">' . Auth::user()->priceFormat($subtotal) . '</span>
-                                    </div>
-                                    <div class="col-sm-2 mt-2">
-                                        <a href="#" class="action-btn bg-danger bs-pass-para" data-confirm="' . __("Are You Sure?") .'" data-text="'.__("This action can not be undone. Do you want to continue?") . '" data-confirm-yes=document.getElementById("' . $model_delete_id . '").submit(); title="' . __('Delete') . '}" data-id="' . $id . '" title="' . __('Delete') . '"   >
-                                        <span class="text-white"><i class="ti ti-trash"></i></span> 
-                                        </a>
-                                        <form method="post" action="' . url('remove-from-cart') . '"  accept-charset="UTF-8" id="' . $model_delete_id . '">
-                                            <input name="_method" type="hidden" value="DELETE">
-                                            <input name="_token" type="hidden" value="' . csrf_token() . '">
-                                            <input type="hidden" name="session_key" value="' . $session_key . '">
-                                            <input type="hidden" name="id" value="' . $id . '">
-                                        </form>
-     
-
-                                    </div>
-                                </div>
-                            </div>
-                        </div>';
-                   
-
-
-                        // <div class="action-btn bg-danger ms-2">
-                        //                             <a href="#" class="bs-pass-para mx-3 btn btn-sm d-inline-flex align-items-center"  data-confirm="{{__('Are You Sure?')}}" data-text="{{__('This action can not be undone. Do you want to continue?')}}" data-confirm-yes="delete-form-{{$val->id}}" title="{{__('Delete')}}" data-bs-toggle="tooltip" data-bs-placement="top">
-                        //<span class="text-white"><i class="ti ti-trash"></i></span></a>
-                        //                         </div>
-                        //                         {!! Form::open(['method' => 'DELETE', 'route' => ['business.destroy', $val->id],'id'=>'delete-form-'.$val->id]) !!}
-                        //                         {!! Form::close() !!}
-
-            // if cart is empty then this the first product
-            if (!$cart) {
-                $cart = [
-                    $id => [
-                        "name" => $productname,
-                        "quantity" => 1,
-                        "price" => $productprice,
-                        "id" => $id,
-                        "tax" => $producttax,
-                        "subtotal" => $subtotal,
-                        "originalquantity" => $originalquantity,
-                    ],
-                ];
-
-                if ($originalquantity < $cart[$id]['quantity'] && $session_key == 'sales') {
-                    return response()->json(
-                        [
-                            'code' => 404,
-                            'status' => 'Error',
-                            'error' => __('This product is out of stock!'),
-                        ],
-                        404
-                    );
-                }
-
-                session()->put($session_key, $cart);
+        $dir = storage_path('uploads/product_image/');
+        if(!empty($product_img_id->product_images))
+        {
+            if(!file_exists($dir . $product_img_id->product_images))
+            {
+                Product_images::where('id', $id)->delete();
 
                 return response()->json(
                     [
-                        'code' => 200,
-                        'status' => 'Success',
-                        'success' => $productname . __(' added to cart successfully!'),
-                        'product' => $cart[$id],
-                        'carthtml' => $carthtml,
+                        'error' => __('File not exists in folder!'),
+                        'id' => $id,
                     ]
                 );
             }
-
-            // if cart not empty then check if this product exist then increment quantity
-            if (isset($cart[$id])) {
-                $cart[$id]['quantity']++;
-                $cart[$id]['id'] = $id;
-
-                $subtotal = $cart[$id]["price"] * $cart[$id]["quantity"];
-                $tax      = ($subtotal * $cart[$id]["tax"]) / 100;
-
-                $cart[$id]["subtotal"]         = $subtotal + $tax;
-                $cart[$id]["originalquantity"] = $originalquantity;
-
-                if ($originalquantity < $cart[$id]['quantity'] && $session_key == 'sales') {
-                    return response()->json(
-                        [
-                            'code' => 404,
-                            'status' => 'Error',
-                            'error' => __('This product is out of stock!'),
-                        ],
-                        404
-                    );
-                }
-
-                session()->put($session_key, $cart);
+            else
+            {
+                unlink($dir . $product_img_id->product_images);
+                Product_images::where('id', '=', $id)->delete();
 
                 return response()->json(
                     [
-                        'code' => 200,
-                        'status' => 'Success',
-                        'success' => $productname . __(' added to cart successfully!'),
-                        'product' => $cart[$id],
-                        'carttotal' => $cart,
+                        'success' => __('Record deleted successfully!'),
+                        'id' => $id,
                     ]
                 );
             }
-
-            // if item not exist in cart then add to cart with quantity = 1
-            $cart[$id] = [
-                "name" => $productname,
-                "quantity" => 1,
-                "price" => $productprice,
-                "tax" => $producttax,
-                "subtotal" => $subtotal,
-                "id" => $id,
-                "originalquantity" => $originalquantity,
-            ];
-
-            if ($originalquantity < $cart[$id]['quantity'] && $session_key == 'sales') {
-                return response()->json(
-                    [
-                        'code' => 404,
-                        'status' => 'Error',
-                        'error' => __('This product is out of stock!'),
-                    ],
-                    404
-                );
-            }
-
-            session()->put($session_key, $cart);
-
-            return response()->json(
-                [
-                    'code' => 200,
-                    'status' => 'Success',
-                    'success' => $productname . __(' added to cart successfully!'),
-                    'product' => $cart[$id],
-                    'carthtml' => $carthtml,
-                    'carttotal' => $cart,
-                ]
-            );
-        } else {
-            return response()->json(
-                [
-                    'code' => 404,
-                    'status' => 'Error',
-                    'error' => __('This Product is not found!'),
-                ],
-                404
-            );
         }
+
+        return response()->json(
+            [
+                'success' => __('Record deleted successfully!'),
+                'id' => $id,
+            ]
+        );
     }
 
-    public function updateCart(Request $request)
+    public function productVariantsCreate(Request $request)
     {
-        $id          = $request->id;
-        $quantity    = $request->quantity;
-        $session_key = $request->session_key;
-        // dd($session_key);
-
-        if (Auth::user()->can('Manage Product') && $request->ajax() && isset($id) && !empty($id) && isset($session_key) && !empty($session_key)) {
-            $cart = session()->get($session_key);
-
-            if (isset($cart[$id]) && $quantity == 0) {
-                unset($cart[$id]);
-            }
-            //    dd($quantity);
-            if ($quantity)  {
-                
-                $cart[$id]["quantity"] = $quantity;
-                // dd( $cart[$id]["tax"]);
-                $producttax            = $cart[$id]["tax"];
-                $productprice          = $cart[$id]["price"];
-
-                $subtotal = $productprice * $quantity;
-                $tax      = ($subtotal * $producttax) / 100;
-
-                $cart[$id]["subtotal"] = $subtotal + $tax;
-            }
-            // dd($cart);
-            if ($cart[$id]["originalquantity"] < $cart[$id]['quantity'] && $session_key == 'sales') {
-                return response()->json(
-                    [
-                        'code' => 404,
-                        'status' => 'Error',
-                        'error' => __('This product is out of stock!'),
-                    ],
-                    404
-                );
-            }
-
-            session()->put($session_key, $cart);
-
-            return response()->json(
-                [
-                    'code' => 200,
-                    'success' => __('Cart updated successfully!'),
-                    'product' => $cart,
-                ]
-            );
-        } else {
-            return response()->json(
-                [
-                    'code' => 404,
-                    'status' => 'Error',
-                    'error' => __('This Product is not found!'),
-                ],
-                404
-            );
-        }
+        return view('product.variants.create')->render();
     }
 
-    public function removeFromCart(Request $request)
+    public function getProductVariantsPossibilities(Request $request)
     {
-        $id          = $request->id;
-        $session_key = $request->session_key;
-        if (Auth::user()->can('Manage Product') && isset($id) && !empty($id) && isset($session_key) && !empty($session_key)) {
-            $cart = session()->get($session_key);
-            if (isset($cart[$id])) {
-                unset($cart[$id]);
-                session()->put($session_key, $cart);
-            }
+        $variant_name         = $request->variant_name;
+        $variant_options      = $request->variant_options;
+        $hiddenVariantOptions = $request->hiddenVariantOptions;
 
-            return redirect()->back()->with('success', __('Product removed from cart!'));
-        } else {
-            return redirect()->back()->with('error', __('This Product is not found!'));
+        $hiddenVariantOptions = json_decode($hiddenVariantOptions, true);
+
+        $variants = [
+            [
+                'variant_name' => $variant_name,
+                'variant_options' => explode('|', $variant_options),
+            ],
+        ];
+
+        $hiddenVariantOptions = array_merge($hiddenVariantOptions, $variants);
+
+        $optionArray = $variantArray = [];
+        foreach($hiddenVariantOptions as $variant)
+        {
+            $variantArray[] = $variant['variant_name'];
+            $optionArray[]  = $variant['variant_options'];
         }
+        $possibilities = Product::possibleVariants($optionArray);
+
+        $varitantHTML = view('product.variants.list', compact('possibilities', 'variantArray'))->render();
+
+        $result = [
+            'status' => false,
+            'hiddenVariantOptions' => json_encode($hiddenVariantOptions),
+            'varitantHTML' => $varitantHTML,
+        ];
+
+        return response()->json($result);
     }
 
-    public function emptyCart(Request $request)
+    public function getProductsVariantQuantity(Request $request)
     {
-        $session_key = $request->session_key;
+        $status       = false;
+        $quantity     = $variant_id = 0;
+        $quantityHTML = '<strong>' . __('Please select variants to get available quantity.') . '</strong>';
+        $priceHTML    = '';
 
-        if (Auth::user()->can('Manage Product') && isset($session_key) && !empty($session_key)) {
-            $cart = session()->get($session_key);
-            if (isset($cart) && count($cart) > 0) {
-                session()->forget($session_key);
+        $product = Product::find($request->product_id);
+        $price   = \App\Models\Utility::priceFormat(0);
+        $status  = false;
+
+        if($product && $request->variants != '')
+        {
+            $variant = ProductVariantOption::where('product_id', $product['id'])->where('name', $request->variants)->first();
+
+            if($variant)
+            {
+                $status     = true;
+                $quantity   = $variant->quantity - (isset($cart[$variant->id]['quantity']) ? $cart[$variant->id]['quantity'] : 0);
+                $price      = \App\Models\Utility::priceFormat($variant->price);
+                $variant_id = $variant->id;
             }
-
-            return redirect()->back()->with('success', __('Cart is empty!'));
-        } else {
-            return redirect()->back()->with('error', __('Cart cannot be empty!.'));
         }
+
+        return response()->json(
+            [
+                'status' => $status,
+                'price' => $price,
+                'quantity' => $quantity,
+                'variant_id' => $variant_id,
+            ]
+        );
     }
-    public function export()
+
+    public function VariantDelete($id)
     {
-        $name = 'Product_' . date('Y-m-d i:h:s');
-        $data = Excel::download(new ProductExport(), $name . '.xlsx'); ob_end_clean();
+        ProductVariantOption::find($id)->delete();
+
+        return redirect()->back()->with('success', __('Variant successfully deleted.'));
+    }
+
+       public function fileExport()
+    {
+
+
+        $name = 'product_' . date('Y-m-d i:h:s');
+        $data = Excel::download(new ProductExport(), $name . '.xlsx');
+
 
         return $data;
     }
+
+    public function fileImportExport()
+    {
+        return view('product.import');
+    }
+
+     public function fileImport(Request $request)
+    {
+
+        $rules = [
+            'file' => 'required|mimes:csv,txt,xlsx',
+        ];
+        $user     = \Auth::user();
+        $store_id = Store::where('id', $user->current_store)->first();
+
+
+        $validator = \Validator::make($request->all(), $rules);
+
+        if($validator->fails())
+        {
+            $messages = $validator->getMessageBag();
+
+            return redirect()->back()->with('error', $messages->first());
+        }
+
+        $products = (new ProductImport())->toArray(request()->file('file'))[0];
+
+        $totalproduct = count($products) - 1;
+
+        $errorArray    = [];
+        for($i = 1; $i <= count($products) - 1; $i++)
+        {
+            $product = $products[$i];
+            $productBySku = Product::where('SKU', $product[2])->first();
+
+
+            if(!empty($productByname))
+            {
+                $productData = $productBySku;
+            }
+            else
+            {
+                $productData = new Product();
+
+            }
+
+            $productData->name            = $product[0];
+            $productData->description         = $product[1];
+            $productData->SKU          = $product[2];
+            $productData->price          = $product[3];
+            $productData->quantity          = $product[4];
+            $productData->store_id = $store_id->id;
+            $productData->created_by        = \Auth::user()->creatorId();
+
+
+
+            if(empty($productData))
+            {
+                $errorArray[] = $productData;
+            }
+            else
+            {
+                $productData->save();
+            }
+        }
+
+        $errorRecord = [];
+        if(empty($errorArray))
+        {
+            $data['status'] = 'success';
+            $data['msg']    = __('Record successfully imported');
+        }
+        else
+        {
+            $data['status'] = 'error';
+            $data['msg']    = count($errorArray) . ' ' . __('Record imported fail out of' . ' ' . $totalproduct . ' ' . 'record');
+
+
+            foreach($errorArray as $errorData)
+            {
+
+                $errorRecord[] = implode(',', $errorData);
+
+            }
+
+            \Session::put('errorArray', $errorRecord);
+        }
+
+        return redirect()->back()->with($data['status'], $data['msg']);
+    }
 }
+

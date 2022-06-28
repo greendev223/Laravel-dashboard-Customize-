@@ -1,4 +1,5 @@
-@extends('layouts.master')
+@extends('layouts.auth')
+
 @section('content')
 <div class="col-11 col-xl-6 py-5 mx-auto ml-md-0">
   <h4 class="text-primary font-weight-normal mb-1"><strong>{{__('Confirm Password')}}</strong></h4>

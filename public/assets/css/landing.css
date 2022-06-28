@@ -6,7 +6,7 @@ Support: [support link]
 File: style.css
 =========================================================================
 =================================================================================== */
-body {
+/* body {
     margin: 0;
     overflow-x: hidden;
     background: white;
@@ -100,7 +100,7 @@ section {
 }
 
 .navbar.default.top-nav-collapse {
-    background: rgba(28, 35, 47, 0.9);;
+    background: transparent;
     box-shadow: none;
 }
 
@@ -177,7 +177,7 @@ header.price-header {
     font-size: 45px;
     margin: 0 auto;
     border-radius: 50px;
-}
+} */
 
 .price-section {
     position: relative;

@@ -2,7 +2,7 @@
 
 namespace App\Imports;
 
-use App\Models\Products;
+use App\Models\Product;
 use Maatwebsite\Excel\Concerns\Importable;
 use Maatwebsite\Excel\Concerns\ToModel;
 

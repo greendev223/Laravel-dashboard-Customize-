@@ -1,6 +1,6 @@
 <?php
-// System : POSGO SaaS
-// System Version : 2.8
+// System : StoreGo Saas
+// System Version : 3.6
 
 
 function getPhpVersionInfo()
@@ -23,8 +23,9 @@ $arrPermissions['storage/framework/sessions/'] = __DIR__ . "/storage/framework/s
 $arrPermissions['storage/framework/views/']    = __DIR__ . "/storage/framework/views/";
 $arrPermissions['storage/logs/']               = __DIR__ . "/storage/logs/";
 $arrPermissions['bootstrap/cache/']            = __DIR__ . "/bootstrap/cache/";
+$arrPermissions['public/']                     = __DIR__ . "/public/";
 $arrPermissions['resources/lang/']             = __DIR__ . "/resources/lang/";
-$arrPermissions['.env']                        = __DIR__ . "/.env";
+// $arrPermissions['.env']                        = __DIR__ . "/.env";
 $arrPer = [];
 $err    = 0;
 
@@ -141,4 +142,5 @@ if($err != 1)
 </div>
 </body>
 </html>
+
 

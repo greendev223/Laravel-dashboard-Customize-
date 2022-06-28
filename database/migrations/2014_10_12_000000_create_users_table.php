@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CreateUsersTable extends Migration
 {
@@ -13,25 +13,26 @@ class CreateUsersTable extends Migration
      */
     public function up()
     {
-        Schema::create('users', function (Blueprint $table) {
-            $table->bigIncrements('id');
+        Schema::create(
+            'users', function (Blueprint $table){
+            $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->text('address')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->string('avatar')->nullable();
-            $table->integer('parent_id')->default('0');
-            $table->integer('branch_id')->default('0');
-            $table->integer('cash_register_id')->default('0');
-            $table->string('lang');
-            $table->integer('plan_id')->nullable();
-            $table->date('plan_expire_date')->nullable();
-            $table->integer('is_active')->default('0');
-            $table->integer('user_status')->default('0');
             $table->rememberToken();
+            $table->string('lang')->nullable();
+            $table->integer('current_store')->nullable();
+            $table->string('avatar')->nullable();
+            $table->string('type', 20)->default('user');
+            $table->integer('plan')->default(1);
+            $table->date('plan_expire_date')->nullable();
+            $table->integer('created_by')->default(0);
+            $table->string('mode')->default('light');
+            $table->integer('plan_is_active')->default(1);
             $table->timestamps();
-        });
+        }
+        );
     }
 
     /**

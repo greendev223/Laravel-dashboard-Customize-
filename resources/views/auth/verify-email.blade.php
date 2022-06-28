@@ -1,4 +1,4 @@
-@extends('layouts.master')
+@extends('layouts.auth')
 
 @section('content')
 <div class="col-11 col-xl-6 py-5 mx-auto ml-md-0">

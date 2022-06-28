@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Models\LandingPageSection;
+use App\Models\LandingPageSections;
 use App\Models\Utility;
 use Closure;
 use Illuminate\Http\Request;
@@ -23,10 +23,10 @@ class XSS
     {
         if(\Auth::check())
         {
-            \App::setLocale(\Auth::user()->lang);
-
-            if (\Auth::user()->isSuperAdmin()) {
-
+           $user=\Auth::user()->lang;
+            \App::setLocale($user);
+            if(\Auth::user()->type == 'super admin')
+            {
                 $migrations             = $this->getMigrations();
                 $dbMigrations           = $this->getExecutedMigrations();
                 $numberOfUpdatesPending = count($migrations) - count($dbMigrations);
@@ -35,12 +35,7 @@ class XSS
                 {
                     return redirect()->route('LaravelUpdater::welcome');
                 }
-                $landingData = LandingPageSection::all()->count();
 
-                if($landingData == 0)
-                {
-                    // Utility::add_landing_page_data();
-                }
             }
         }
 
@@ -51,6 +46,7 @@ class XSS
         }
         );
         $request->merge($input);
+
         return $next($request);
     }
 }

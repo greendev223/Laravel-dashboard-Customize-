@@ -7,15 +7,26 @@ use App\Models\Invoice;
 use App\Models\InvoicePayment;
 use App\Models\Order;
 use App\Models\Plan;
+use App\Models\PlanOrder;
+use App\Models\Product;
+use App\Models\ProductVariantOption;
+use App\Models\Shipping;
+use App\Models\Store;
 use App\Models\UserCoupon;
+use App\Models\UserDetail;
+use App\Models\User;
+use App\Models\UserStore;
 use App\Models\Utility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Session;
 use PayPal\Api\Amount;
 use PayPal\Api\Item;
+use App\Models\Customer;
+use App\Models\PurchasedProducts;
 use PayPal\Api\ItemList;
 use PayPal\Api\Payer;
 use PayPal\Api\Payment;
@@ -29,36 +40,388 @@ class PaypalController extends Controller
 {
     private $_api_context;
 
-    public function setApiContext()
+    public function setApiContext($slug = '')
     {
-        $user = \Auth::user();
 
-        if(\Auth::user()->isOwner())
+        if(Auth::check() && Auth::guard('customers')->check() == false)
         {
-            $payment_setting = Utility::getAdminPaymentSetting();
+
+            $admin_payment_setting           = Utility::getAdminPaymentSetting();
+            $paypal_conf['settings']['mode'] = $admin_payment_setting['paypal_mode'];
+            $paypal_conf['client_id']        = $admin_payment_setting['paypal_client_id'];
+            $paypal_conf['secret_key']       = $admin_payment_setting['paypal_secret_key'];
         }
         else
         {
-            $payment_setting = Utility::getCompanyPaymentSetting();
+
+            $store                           = Store::where('slug', $slug)->first();
+            $store_payment_setting           = Utility::getPaymentSetting($store->id);
+            $paypal_conf['settings']['mode'] = $store_payment_setting['paypal_mode'];
+            $paypal_conf['client_id']        = $store_payment_setting['paypal_client_id'];
+            $paypal_conf['secret_key']       = $store_payment_setting['paypal_secret_key'];
         }
 
 
-        $paypal_conf['settings']['mode'] = $payment_setting['paypal_mode'];
-        $paypal_conf['client_id']        = $payment_setting['paypal_client_id'];
-        $paypal_conf['secret_key']       = $payment_setting['paypal_secret_key'];
-
-        $this->_api_context = new ApiContext(
-            new OAuthTokenCredential(
-                $paypal_conf['client_id'], $paypal_conf['secret_key']
-            )
-        );
+        $this->_api_context = new ApiContext(new OAuthTokenCredential($paypal_conf['client_id'], $paypal_conf['secret_key']));
         $this->_api_context->setConfig($paypal_conf['settings']);
+
+        return $this;
+
+    }
+
+    public function PayWithPaypal(Request $request, $slug)
+    {
+
+
+        $cart     = session()->get($slug);
+        $products = $cart['products'];
+
+        $store   = Store::where('slug', $slug)->first();
+        $objUser = \Auth::user();
+
+        $total        = 0;
+        $sub_tax      = 0;
+        $sub_total    = 0;
+        $total_tax    = 0;
+        $product_name = [];
+        $product_id   = [];
+
+        foreach($products as $key => $product)
+        {
+            if($product['variant_id'] != 0)
+            {
+
+                $product_name[] = $product['product_name'];
+                $product_id[]   = $key;
+
+                foreach($product['tax'] as $tax)
+                {
+                    $sub_tax   = ($product['variant_price'] * $product['quantity'] * $tax['tax']) / 100;
+                    $total_tax += $sub_tax;
+                }
+                $totalprice = $product['variant_price'] * $product['quantity'];
+                $total      += $totalprice;
+            }
+            else
+            {
+                $product_name[] = $product['product_name'];
+                $product_id[]   = $key;
+
+                foreach($product['tax'] as $tax)
+                {
+                    $sub_tax   = ($product['price'] * $product['quantity'] * $tax['tax']) / 100;
+                    $total_tax += $sub_tax;
+                }
+                $totalprice = $product['price'] * $product['quantity'];
+                $total      += $totalprice;
+            }
+        }
+
+        if($products)
+        {
+            try
+            {
+                $coupon_id = null;
+                $price     = $total + $total_tax;
+                if(isset($cart['coupon']))
+                {
+                    if($cart['coupon']['coupon']['enable_flat'] == 'off')
+                    {
+                        $discount_value = ($price / 100) * $cart['coupon']['coupon']['discount'];
+                        $price          = $price - $discount_value;
+                    }
+                    else
+                    {
+                        $discount_value = $cart['coupon']['coupon']['flat_discount'];
+                        $price          = $price - $discount_value;
+                    }
+                }
+
+                if(isset($cart['shipping']) && isset($cart['shipping']['shipping_id']) && !empty($cart['shipping']))
+                {
+                    $shipping = Shipping::find($cart['shipping']['shipping_id']);
+                    if(!empty($shipping))
+                    {
+                        $price = $price + $shipping->price;
+                    }
+                }
+
+                $this->setApiContext($slug);
+                $name  = implode(',', $product_name);
+                $payer = new Payer();
+                $payer->setPaymentMethod('paypal');
+                $item_1 = new Item();
+                $item_1->setName($name)->setCurrency($store->currency_code)->setQuantity(1)->setPrice($price);
+                $item_list = new ItemList();
+                $item_list->setItems([$item_1]);
+                $amount = new Amount();
+                $amount->setCurrency($store->currency_code)->setTotal($price);
+                $transaction = new Transaction();
+                $transaction->setAmount($amount)->setItemList($item_list)->setDescription($name);
+                $redirect_urls = new RedirectUrls();
+                $redirect_urls->setReturnUrl(
+                    route('get.payment.status', $store->slug)
+                )->setCancelUrl(
+                    route('get.payment.status', $store->slug)
+                );
+
+                $payment = new Payment();
+                $payment->setIntent('Sale')->setPayer($payer)->setRedirectUrls($redirect_urls)->setTransactions([$transaction]);
+
+                try
+                {
+                    $payment->create($this->_api_context);
+                }
+                catch(\PayPal\Exception\PayPalConnectionException $ex) //PPConnectionException
+                {
+                    return redirect()->back()->with('error', $ex->getMessage());
+                }
+                foreach($payment->getLinks() as $link)
+                {
+                    if($link->getRel() == 'approval_url')
+                    {
+                        $redirect_url = $link->getHref();
+                        break;
+                    }
+                }
+                Session::put('paypal_payment_id', $payment->getId());
+                if(isset($redirect_url))
+                {
+                    return Redirect::away($redirect_url);
+                }
+
+                return redirect()->back()->with('error', __('Unknown error occurred'));
+            }
+            catch(\Exception $e)
+            {
+                return redirect()->back()->with('error', __('Unknown error occurred'));
+            }
+        }
+        else
+        {
+            return redirect()->back()->with('error', __('is deleted.'));
+        }
+    }
+
+    public function GetPaymentStatus(Request $request, $slug)
+    {
+        
+        $cart = session()->get($slug);
+        if(isset($cart['coupon']))
+        {
+            $coupon = $cart['coupon']['coupon'];
+        }
+        $products     = $cart['products'];
+        $store        = Store::where('slug', $slug)->first();
+        $user_details = $cart['customer'];
+
+        $total        = 0;
+        $new_qty      = 0;
+        $sub_total    = 0;
+        $total_tax    = 0;
+        $product_name = [];
+        $product_id   = [];
+        $quantity     = [];
+        $pro_tax      = [];
+
+        foreach($products as $key => $product)
+        {
+            if($product['variant_id'] != 0)
+            {
+                $new_qty                = $product['originalvariantquantity'] - $product['quantity'];
+                $product_edit           = ProductVariantOption::find($product['variant_id']);
+                $product_edit->quantity = $new_qty;
+                $product_edit->save();
+
+                $product_name[] = $product['product_name'];
+                $product_id[]   = $key;
+                $quantity[]     = $product['quantity'];
+
+
+                foreach($product['tax'] as $tax)
+                {
+                    $sub_tax   = ($product['variant_price'] * $product['quantity'] * $tax['tax']) / 100;
+                    $total_tax += $sub_tax;
+                    $pro_tax[] = $sub_tax;
+                }
+                $totalprice = $product['variant_price'] * $product['quantity'] + $total_tax;
+                $subtotal   = $product['variant_price'] * $product['quantity'];
+                $sub_total  += $subtotal;
+                $total      += $totalprice;
+            }
+            else
+            {
+                $new_qty                = $product['originalquantity'] - $product['quantity'];
+                $product_edit           = Product::find($product['product_id']);
+                $product_edit->quantity = $new_qty;
+                $product_edit->save();
+
+                $product_name[] = $product['product_name'];
+                $product_id[]   = $key;
+                $quantity[]     = $product['quantity'];
+
+
+                foreach($product['tax'] as $tax)
+                {
+                    $sub_tax   = ($product['price'] * $product['quantity'] * $tax['tax']) / 100;
+                    $total_tax += $sub_tax;
+                    $pro_tax[] = $sub_tax;
+                }
+                $totalprice = $product['price'] * $product['quantity'] + $total_tax;
+                $subtotal   = $product['price'] * $product['quantity'];
+                $sub_total  += $subtotal;
+                $total      += $totalprice;
+            }
+        }
+        if(isset($cart['shipping']) && isset($cart['shipping']['shipping_id']) && !empty($cart['shipping']))
+        {
+            $shipping = Shipping::find($cart['shipping']['shipping_id']);
+            if(!empty($shipping))
+            {
+                $shipping_name  = $shipping->name;
+                $shipping_price = $shipping->price;
+
+                $shipping_data = json_encode(
+                    [
+                        'shipping_name' => $shipping_name,
+                        'shipping_price' => $shipping_price,
+                        'location_id' => $cart['shipping']['location_id'],
+                    ]
+                );
+            }
+            else
+            {
+                $shipping_data = '';
+            }
+        }
+        $user = Auth::user();
+
+        if($product)
+        {
+            $this->setApiContext($slug);
+            $payment_id = Session::get('paypal_payment_id');
+            Session::forget('paypal_payment_id');
+            if(empty($request->PayerID || empty($request->token)))
+            {
+                return redirect()->route('store-payment.payment', $slug)->with('error', __('Payment failed'));
+            }
+            $payment   = Payment::get($payment_id, $this->_api_context);
+            $execution = new PaymentExecution();
+            $execution->setPayerId($request->PayerID);
+            try
+            {
+                $result = $payment->execute($execution, $this->_api_context)->toArray();
+
+                $order          = new Order();
+                $order->user_id = Auth()->id();
+                $latestOrder    = Order::orderBy('created_at', 'DESC')->first();
+                if(!empty($latestOrder))
+                {
+                    $order->order_nr = '#' . str_pad($latestOrder->id + 1, 4, "100", STR_PAD_LEFT);
+                }
+                else
+                {
+                    $order->order_nr = '#' . str_pad(1, 4, "100", STR_PAD_LEFT);
+
+                }
+                $orderID = $order->order_nr;
+                $status  = ucwords(str_replace('_', ' ', $result['state']));
+                if($result['state'] == 'approved')
+                {   
+                    $customer               = Auth::guard('customers')->user();
+                    $order                  = new Order();
+                    $order->order_id        = $orderID;
+                    $order->name            = $user_details['name'];
+                    $order->email            = $user_details['email'];
+                    $order->card_number     = '';
+                    $order->card_exp_month  = '';
+                    $order->card_exp_year   = '';
+                    $order->status          = 'pending';
+                    $order->user_address_id = $user_details['id'];
+                    $order->shipping_data   = !empty($shipping_data) ? $shipping_data : '';
+                    $order->coupon          = !empty($cart['coupon']['coupon']['id']) ? $cart['coupon']['coupon']['id'] : '';
+                    $order->coupon_json     = json_encode(!empty($coupon) ? $coupon : '');
+                    $order->discount_price  = !empty($cart['coupon']['discount_price']) ? $cart['coupon']['discount_price'] : '';
+                    $order->price           = $result['transactions'][0]['amount']['total'];
+                    $order->product         = json_encode($products);
+                    $order->price_currency  = $store->currency_code;
+                    $order->txn_id          = $payment_id;
+                    $order->payment_type    = __('PAYPAL');
+                    $order->payment_status  = $result['state'];
+                    $order->receipt         = '';
+                    $order->user_id         = $store['id'];
+                    $order->customer_id     = $customer->id;
+                    $order->save();
+                    
+                    
+                    foreach($products as $product_id)
+                    {   
+                        $purchased_products = new PurchasedProducts();
+                        $purchased_products->product_id  = $product_id['product_id'];
+                        $purchased_products->customer_id = $customer->id;
+                        $purchased_products->order_id   = $order->id;
+                        $purchased_products->save();
+                    }
+                    session()->forget($slug);
+
+                    $order_email = $order->email;
+                  
+                        $owner=User::find($store->created_by);
+
+                        $owner_email=$owner->email;
+                      
+                        $order_id    = Crypt::encrypt($order->id);
+
+                        if(isset($store->mail_driver) && !empty($store->mail_driver))
+                        {
+                            $dArr = [
+                                'order_name' => $order->name,
+                            ];
+                             $resp = Utility::sendEmailTemplate('Order Created', $order_email, $dArr, $store, $order_id);
+                         
+                            $resp1=Utility::sendEmailTemplate('Order Created For Owner', $owner_email, $dArr, $store, $order_id);
+
+
+                        }
+                        if(isset($store->is_twilio_enabled) && $store->is_twilio_enabled=="on")
+                        {
+                             Utility::order_create_owner($order,$owner,$store);
+                             Utility::order_create_customer($order,$customer,$store);
+                        }
+
+
+                    return redirect()->route(
+                        'store-complete.complete', [
+                                                     $store->slug,
+                                                     Crypt::encrypt($order->id),
+                                                 ]
+                    )->with('success', __('Transaction has been') . $status);
+                    
+                    
+                }
+                else
+                {
+                    return redirect()->back()->with('error', __('Transaction has been') . $status);
+                }
+            }
+            catch(\Exception $e)
+            {
+                return redirect()->back()->with('error', __('Transaction has been failed.'));
+            }
+        }
+        else
+        {
+            return redirect()->back()->with('error', __(' is deleted.'));
+        }
     }
 
     public function planPayWithPaypal(Request $request)
     {
+
         $planID = \Illuminate\Support\Facades\Crypt::decrypt($request->plan_id);
+
         $plan   = Plan::find($planID);
+
         if($plan)
         {
             try
@@ -99,28 +462,29 @@ class PaypalController extends Controller
                 $redirect_urls = new RedirectUrls();
                 $redirect_urls->setReturnUrl(
                     route(
-                        'plan.get.payment.status', [
-                                                     $plan->id,
-                                                     'coupon_id' => $coupon_id,
-                                                 ]
+                        'get.store.payment.status', [
+                                                      $plan->id,
+                                                      'coupon_id' => $coupon_id,
+                                                  ]
                     )
                 )->setCancelUrl(
                     route(
-                        'plan.get.payment.status', [
-                                                     $plan->id,
-                                                     'coupon_id' => $coupon_id,
-                                                 ]
+                        'get.store.payment.status', [
+                                                      $plan->id,
+                                                      'coupon_id' => $coupon_id,
+                                                  ]
                     )
                 );
                 $payment = new Payment();
                 $payment->setIntent('Sale')->setPayer($payer)->setRedirectUrls($redirect_urls)->setTransactions([$transaction]);
+
                 try
                 {
                     $payment->create($this->_api_context);
+                    
                 }
                 catch(\PayPal\Exception\PayPalConnectionException $ex) //PPConnectionException
                 {
-
                     if(config('app.debug'))
                     {
                         return redirect()->route('stripe', \Illuminate\Support\Facades\Crypt::encrypt($plan->id))->with('error', __('Connection timeout'));
@@ -157,10 +521,13 @@ class PaypalController extends Controller
         }
     }
 
-    public function planGetPaymentStatus(Request $request, $plan_id)
+    public function storeGetPaymentStatus(Request $request, $plan_id)
     {
-        $user = Auth::user();
+        $user     = Auth::user();
+        $store_id = Auth::user()->current_store;
+
         $plan = Plan::find($plan_id);
+
         if($plan)
         {
             $this->setApiContext();
@@ -196,38 +563,46 @@ class PaypalController extends Controller
                         }
                     }
                 }
+
                 if($result['state'] == 'approved')
                 {
 
-                    $order                 = new Order();
-                    $order->order_id       = $orderID;
-                    $order->name           = $user->name;
-                    $order->card_number    = '';
-                    $order->card_exp_month = '';
-                    $order->card_exp_year  = '';
-                    $order->plan_name      = $plan->name;
-                    $order->plan_id        = $plan->id;
-                    $order->price          = $result['transactions'][0]['amount']['total'];
-                    $order->price_currency = env('CURRENCY');
-                    $order->txn_id         = $payment_id;
-                    $order->payment_type   = __('PAYPAL');
-                    $order->payment_status = $result['state'];
-                    $order->receipt        = '';
-                    $order->user_id        = $user->id;
-                    $order->save();
+                    $planorder                 = new PlanOrder();
+                    $planorder->order_id       = $orderID;
+                    $planorder->name           = $user->name;
+                    $planorder->card_number    = '';
+                    $planorder->card_exp_month = '';
+                    $planorder->card_exp_year  = '';
+                    $planorder->plan_name      = $plan->name;
+                    $planorder->plan_id        = $plan->id;
+                    $planorder->price          = $result['transactions'][0]['amount']['total'];
+                    $planorder->price_currency = env('CURRENCY');
+                    $planorder->txn_id         = $payment_id;
+                    $planorder->payment_type   = __('PAYPAL');
+                    $planorder->payment_status = $result['state'];
+                    $planorder->receipt        = '';
+                    $planorder->user_id        = $user->id;
+                    $planorder->store_id       = $store_id;
+                    $planorder->save();
+
                     $assignPlan = $user->assignPlan($plan->id);
+
                     if($assignPlan['is_success'])
                     {
+
+
                         return redirect()->route('plans.index')->with('success', __('Plan activated Successfully.'));
                     }
                     else
                     {
-                        return redirect()->route('plans.index')->with('error', __($assignPlan['error']));
+
+
+                        return redirect()->route('plans.index')->with('error', $assignPlan['error']);
                     }
                 }
                 else
                 {
-                    return redirect()->route('plans.index')->with('error', __('Transaction has been ' . __($status)));
+                    return redirect()->route('plans.index')->with('error', __('Transaction has been') . $status);
                 }
             }
             catch(\Exception $e)
@@ -239,209 +614,5 @@ class PaypalController extends Controller
         {
             return redirect()->route('plans.index')->with('error', __('Plan is deleted.'));
         }
-    }
-
-    public function customerPayWithPaypal(Request $request, $invoice_id)
-    {
-        $settings = DB::table('settings')->where('created_by', '=', \Auth::user()->creatorId())->get()->pluck('value', 'name');
-        $user     = \Auth::user();
-
-        $get_amount = $request->amount;
-
-        $request->validate(['amount' => 'required|numeric|min:0']);
-
-
-        $invoice = Invoice::find($invoice_id);
-
-        if($invoice)
-        {
-            if($get_amount > $invoice->getDue())
-            {
-                return redirect()->back()->with('error', __('Invalid amount.'));
-            }
-            else
-            {
-                $this->setApiContext();
-
-                $orderID = strtoupper(str_replace('.', '', uniqid('', true)));
-
-                $name = Utility::invoiceNumberFormat($settings, $invoice->invoice_id);
-
-                $payer = new Payer();
-                $payer->setPaymentMethod('paypal');
-
-                $item_1 = new Item();
-                $item_1->setName($name)->setCurrency(Utility::getValByName('site_currency'))->setQuantity(1)->setPrice($get_amount);
-
-                $item_list = new ItemList();
-                $item_list->setItems([$item_1]);
-
-                $amount = new Amount();
-                $amount->setCurrency(Utility::getValByName('site_currency'))->setTotal($get_amount);
-
-                $transaction = new Transaction();
-                $transaction->setAmount($amount)->setItemList($item_list)->setDescription($name)->setInvoiceNumber($orderID);
-
-                $redirect_urls = new RedirectUrls();
-                $redirect_urls->setReturnUrl(
-                    route(
-                        'customer.get.payment.status', $invoice->id
-                    )
-                )->setCancelUrl(
-                    route(
-                        'customer.get.payment.status', $invoice->id
-                    )
-                );
-
-                $payment = new Payment();
-                $payment->setIntent('Sale')->setPayer($payer)->setRedirectUrls($redirect_urls)->setTransactions([$transaction]);
-
-                try
-                {
-
-                    $payment->create($this->_api_context);
-                }
-                catch(\PayPal\Exception\PayPalConnectionException $ex) //PPConnectionException
-                {
-                    if(\Config::get('app.debug'))
-                    {
-                        return redirect()->back()->with('error', __('Connection timeout'));
-                    }
-                    else
-                    {
-                        return redirect()->back()->with('error', __('Some error occur, sorry for inconvenient'));
-                    }
-                }
-                foreach($payment->getLinks() as $link)
-                {
-                    if($link->getRel() == 'approval_url')
-                    {
-                        $redirect_url = $link->getHref();
-                        break;
-                    }
-                }
-                Session::put('paypal_payment_id', $payment->getId());
-                if(isset($redirect_url))
-                {
-                    return Redirect::away($redirect_url);
-                }
-
-                return redirect()->back()->with('error', __('Unknown error occurred'));
-            }
-        }
-        else
-        {
-            return redirect()->back()->with('error', __('Permission denied.'));
-        }
-    }
-
-    public function customerGetPaymentStatus(Request $request, $invoice_id)
-    {
-        $settings = DB::table('settings')->where('created_by', '=', \Auth::user()->creatorId())->get()->pluck('value', 'name');
-        $user     = \Auth::user();
-
-        $invoice = Invoice::find($invoice_id);
-
-        $this->setApiContext();
-
-        $payment_id = Session::get('paypal_payment_id');
-
-        Session::forget('paypal_payment_id');
-
-        if(empty($request->PayerID || empty($request->token)))
-        {
-            return redirect()->back()->with('error', __('Payment failed'));
-        }
-
-        $payment = Payment::get($payment_id, $this->_api_context);
-
-        $execution = new PaymentExecution();
-        $execution->setPayerId($request->PayerID);
-
-        try
-        {
-            $result   = $payment->execute($execution, $this->_api_context)->toArray();
-            $order_id = strtoupper(str_replace('.', '', uniqid('', true)));
-            $status   = ucwords(str_replace('_', ' ', $result['state']));
-            if($result['state'] == 'approved')
-            {
-                $amount = $result['transactions'][0]['amount']['total'];
-            }
-            else
-            {
-                $amount = isset($result['transactions'][0]['amount']['total']) ? $result['transactions'][0]['amount']['total'] : '0.00';
-            }
-
-
-            if($result['state'] == 'approved')
-            {
-                $payments = InvoicePayment::create(
-                    [
-
-                        'invoice_id' => $invoice->id,
-                        'date' => date('Y-m-d'),
-                        'amount' => $amount,
-                        'account_id' => 0,
-                        'payment_method' => 0,
-                        'order_id' => $order_id,
-                        'currency' => Utility::getValByName('site_currency'),
-                        'txn_id' => $payment_id,
-                        'payment_type' => __('PAYPAL'),
-                        'receipt' => '',
-                        'reference' => '',
-                        'description' => 'Invoice ' . Utility::invoiceNumberFormat($settings, $invoice->invoice_id),
-                    ]
-                );
-
-                if($invoice->getDue() <= 0)
-                {
-                    $invoice->status = 4;
-                    $invoice->save();
-                }
-                elseif(($invoice->getDue() - $payments->amount) == 0)
-                {
-                    $invoice->status = 4;
-                    $invoice->save();
-                }
-                else
-                {
-                    $invoice->status = 3;
-                    $invoice->save();
-                }
-
-                $invoicePayment              = new Transaction();
-                $invoicePayment->user_id     = $invoice->customer_id;
-                $invoicePayment->user_type   = 'Customer';
-                $invoicePayment->type        = 'PAYPAL';
-                $invoicePayment->created_by  = \Auth::user()->id;
-                $invoicePayment->payment_id  = $invoicePayment->id;
-                $invoicePayment->category    = 'Invoice';
-                $invoicePayment->amount      = $amount;
-                $invoicePayment->date        = date('Y-m-d');
-                $invoicePayment->created_by  = \Auth::user()->creatorId();
-                $invoicePayment->payment_id  = $payments->id;
-                $invoicePayment->description = 'Invoice ' . Utility::invoiceNumberFormat($settings, $invoice->invoice_id);
-                $invoicePayment->account     = 0;
-
-                \App\Transaction::addTransaction($invoicePayment);
-
-                Utility::userBalance('customer', $invoice->customer_id, $request->amount, 'debit');
-
-                Utility::bankAccountBalance($request->account_id, $request->amount, 'credit');
-
-                return redirect()->back()->with('success', __('Payment successfully added'));
-            }
-            else
-            {
-                return redirect()->back()->with('error', __('Transaction has been ' . $status));
-            }
-
-        }
-        catch(\Exception $e)
-        {
-
-            return redirect()->back()->with('error', __('Transaction has been failed.'));
-        }
-
     }
 }
