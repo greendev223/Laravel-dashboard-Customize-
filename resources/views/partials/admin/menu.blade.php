@@ -66,13 +66,6 @@ $plan = \App\Models\Plan::where('id', \Auth::user()->plan)->first();
                                 <a class="dash-link"
                                     href="{{ route('subscriptions.index') }}">{{ __('Subscriber') }}</a>
                             </li>
-
-                            <li
-                                class="dash-item {{ Request::route()->getName() == 'subscriptions.index' ? ' active' : '' }}">
-                                <a class="dash-link"
-                                    href="{{ route('productsreturns.index') }}">{{ __('Returns') }}</a>
-                            </li>
-
                             @if ($plan->shipping_method == 'on')
                                 <li
                                     class="dash-item {{ Request::route()->getName() == 'shipping.index' ? ' active' : '' }}">

@@ -76,4 +76,4 @@ $footer_text = isset(\App\Models\Utility::settings()['footer_text']) ? \App\Mode
 </body>
 
 </html>
-<?php /**PATH D:\My task\Germany\Laravel-dashboard-Customize-\resources\views/layouts/admin.blade.php ENDPATH**/ ?>
+<?php /**PATH D:\My task\Germany\wetransfer_scripts-to-install-onn-your-local-machine_2022-05-23_0954\storego\main_file\resources\views/layouts/admin.blade.php ENDPATH**/ ?>
