@@ -354,6 +354,7 @@ Route::resource('orders', 'OrderController')->middleware(
         'auth',
     ]
 );
+Route::resource('calendars', 'CalendarController')->middleware(['auth', 'XSS']);
 
 Route::get('order/export', 'OrderController@fileExport')->name('order.export');
 

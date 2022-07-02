@@ -1,0 +1,1 @@
+<p>  Let me try!</p><?php /**PATH D:\My task\Germany\Laravel-dashboard-Customize-\resources\views/calendars/index.blade.php ENDPATH**/ ?>

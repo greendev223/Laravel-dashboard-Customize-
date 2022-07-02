@@ -66,6 +66,11 @@ $plan = \App\Models\Plan::where('id', \Auth::user()->plan)->first();
                                 <a class="dash-link"
                                     href="{{ route('subscriptions.index') }}">{{ __('Subscriber') }}</a>
                             </li>
+                            <li
+                                class="dash-item {{ Request::route()->getName() == 'calendars.index' ? ' active' : '' }}">
+                                <a class="dash-link"
+                                    href="{{ route('calendars.index') }}">{{ __('Calendars') }}</a>
+                            </li>
                             @if ($plan->shipping_method == 'on')
                                 <li
                                     class="dash-item {{ Request::route()->getName() == 'shipping.index' ? ' active' : '' }}">
@@ -73,6 +78,7 @@ $plan = \App\Models\Plan::where('id', \Auth::user()->plan)->first();
                                         href="{{ route('shipping.index') }}">{{ __('Shipping') }}</a>
                                 </li>
                             @endif
+                            
                             @if ($plan->additional_page == 'on')
                                 <li
                                     class="dash-item {{ Request::route()->getName() == 'custom-page.index' ? ' active' : '' }}">
