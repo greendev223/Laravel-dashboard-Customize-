@@ -22,7 +22,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'currant_store',
+        'current_store',
         'type',
         'created_by',
     ];
@@ -79,6 +79,13 @@ class User extends Authenticatable
                   ]
         )->where('created_by', '=', \Auth::user()->id)->count();
     }
+
+
+    public function getCreatedBy()
+    {
+        return ($this->created_by == '0' || $this->created_by == '1') ? $this->id : $this->created_by;
+    }
+
 
     public function assignPlan($planID)
     {
