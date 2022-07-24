@@ -57,6 +57,11 @@ $plan = \App\Models\Plan::where('id', \Auth::user()->plan)->first();
                                     href="{{ route('product_tax.index') }}">{{ __('Product Tax') }}</a>
                             </li>
                             <li
+                                class="dash-item {{ Request::route()->getName() == 'purchase.index' ? ' active' : '' }}">
+                                <a class="dash-link"
+                                    href="{{ route('purchase.index') }}">{{ __('Purchase') }}</a>
+                            </li>
+                            <li
                                 class="dash-item {{ Request::route()->getName() == 'product-coupon.index' || Request::route()->getName() == 'product-coupon.show' ? ' active' : '' }}">
                                 <a class="dash-link"
                                     href="{{ route('product-coupon.index') }}">{{ __('Product Coupon') }}</a>

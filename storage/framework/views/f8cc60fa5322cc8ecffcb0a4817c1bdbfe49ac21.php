@@ -57,6 +57,11 @@ $plan = \App\Models\Plan::where('id', \Auth::user()->plan)->first();
                                     href="<?php echo e(route('product_tax.index')); ?>"><?php echo e(__('Product Tax')); ?></a>
                             </li>
                             <li
+                                class="dash-item <?php echo e(Request::route()->getName() == 'purchase.index' ? ' active' : ''); ?>">
+                                <a class="dash-link"
+                                    href="<?php echo e(route('purchase.index')); ?>"><?php echo e(__('Purchase')); ?></a>
+                            </li>
+                            <li
                                 class="dash-item <?php echo e(Request::route()->getName() == 'product-coupon.index' || Request::route()->getName() == 'product-coupon.show' ? ' active' : ''); ?>">
                                 <a class="dash-link"
                                     href="<?php echo e(route('product-coupon.index')); ?>"><?php echo e(__('Product Coupon')); ?></a>

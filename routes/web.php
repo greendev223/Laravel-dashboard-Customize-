@@ -235,6 +235,8 @@ Route::resource('product_tax', 'ProductTaxController')->middleware(
         'XSS',
     ]
 );
+
+
 //=================================product import/export=============================
 Route::get('shipping/export', 'ShippingController@fileExport')->name('shipping.export');
 Route::get('shipping/import/export', 'ShippingController@fileImportExport')->name('shipping.file.import');
@@ -355,6 +357,7 @@ Route::resource('orders', 'OrderController')->middleware(
     ]
 );
 Route::resource('calendars', 'CalendarController')->middleware(['auth', 'XSS']);
+Route::resource('purchase', 'PurchaseController')->middleware(['auth', 'XSS']);
 
 Route::get('order/export', 'OrderController@fileExport')->name('order.export');
 
