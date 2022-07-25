@@ -15,6 +15,33 @@
 
 
 
+<?php $__env->startSection('content'); ?>
+        
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body table-border-style">
+                <h5></h5>
+                <div class="table-responsive">
+                    <table class="table mb-0 dataTable ">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="sort" data-sort="name"><?php echo e(__('Tax Name')); ?></th>
+                                <th scope="col" class="sort" data-sort="name"><?php echo e(__('Rate %')); ?></th>
+                                <th class="text-right"><?php echo e(__('Action')); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<?php $__env->stopSection(); ?>
+
 <?php $__env->startPush('stylesheets'); ?>
 <?php $__env->stopPush(); ?>
 

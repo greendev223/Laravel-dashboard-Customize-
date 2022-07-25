@@ -14,6 +14,33 @@
 
 
 
+@section('content')
+        
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body table-border-style">
+                <h5></h5>
+                <div class="table-responsive">
+                    <table class="table mb-0 dataTable ">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="sort" data-sort="name">{{ __('Tax Name') }}</th>
+                                <th scope="col" class="sort" data-sort="name">{{ __('Rate %') }}</th>
+                                <th class="text-right">{{ __('Action') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
+
 @push('stylesheets')
 @endpush
 
